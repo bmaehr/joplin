@@ -24,6 +24,7 @@
     "prop-types": "^15.6.2",
     "query-string": "6.1.0",
     "react": "16.5.1",
+	"react-feature-flags": "^1.0.0",
     "react-native": "0.57.0",
     "react-native-action-button": "^2.8.5",
     "react-native-datepicker": "^1.7.2",
