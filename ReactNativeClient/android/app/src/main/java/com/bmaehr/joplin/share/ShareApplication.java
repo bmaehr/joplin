@@ -1,8 +1,8 @@
-package net.cozic.joplin.share;
+package com.bmaehr.joplin.share;
 // import build config
-import net.cozic.joplin.BuildConfig;
+import com.bmaehr.joplin.BuildConfig;
 
-import com.alinz.parkerdan.shareextension.SharePackage;
+import com.bmaehr.parkerdan.shareextension.SharePackage;
 
 import android.app.Application;
 

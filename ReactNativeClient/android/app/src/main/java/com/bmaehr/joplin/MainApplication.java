@@ -1,4 +1,4 @@
-package net.cozic.joplin;
+package com.bmaehr.joplin;
 
 import android.app.Application;
 

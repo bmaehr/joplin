@@ -1,4 +1,4 @@
-package net.cozic.joplin.share;
+package com.bmaehr.joplin.share;
 
 
 // import ReactActivity
@@ -9,7 +9,7 @@ public class ShareActivity extends ReactActivity {
 		@Override
 		protected String getMainComponentName() {
 			// this is the name AppRegistry will use to launch the Share View
-			return "Joplin";
+			return "Joplin Pro";
 		}
 }
 

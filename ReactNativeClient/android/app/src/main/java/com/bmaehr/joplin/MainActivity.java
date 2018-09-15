@@ -1,4 +1,4 @@
-package net.cozic.joplin;
+package com.bmaehr.joplin;
 
 import com.facebook.react.ReactActivity;
 
@@ -10,6 +10,6 @@ public class MainActivity extends ReactActivity {
 	 */
 	@Override
 	protected String getMainComponentName() {
-		return "Joplin";
+		return "Joplin Pro";
 	}
 }
