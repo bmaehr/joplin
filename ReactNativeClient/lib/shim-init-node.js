@@ -9,6 +9,7 @@ const mimeUtils = require('lib/mime-utils.js').mime;
 const Note = require('lib/models/Note.js');
 const Resource = require('lib/models/Resource.js');
 const urlValidator = require('valid-url');
+const { _ } = require('lib/locale.js');
 
 function shimInit() {
 	shim.fsDriver = () => { throw new Error('Not implemented') }
