@@ -860,7 +860,7 @@ describe('Synchronizer', function() {
 
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		let resource1 = (await Resource.all())[0];
 		let resourcePath1 = Resource.fullPath(resource1);
 		await synchronizer().start();
@@ -883,7 +883,7 @@ describe('Synchronizer', function() {
 
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		let resource1 = (await Resource.all())[0];
 		let resourcePath1 = Resource.fullPath(resource1);
 		await synchronizer().start();
@@ -915,7 +915,7 @@ describe('Synchronizer', function() {
 
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		let resource1 = (await Resource.all())[0];
 		let resourcePath1 = Resource.fullPath(resource1);
 		await synchronizer().start();
@@ -992,7 +992,7 @@ describe('Synchronizer', function() {
 
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		let resource1 = (await Resource.all())[0];
 		await synchronizer().start();
 
@@ -1012,7 +1012,7 @@ describe('Synchronizer', function() {
 
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		const masterKey = await loadEncryptionMasterKey();
 		await encryptionService().enableEncryption(masterKey, '123456');
 		await encryptionService().loadMasterKeysFromSettings();

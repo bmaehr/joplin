@@ -45,7 +45,7 @@ describe('services_ResourceService', function() {
 
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		note1 = await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		note1 = await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		let resource1 = (await Resource.all())[0];
 		const resourcePath = Resource.fullPath(resource1);
 
@@ -77,7 +77,7 @@ describe('services_ResourceService', function() {
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
 		let note2 = await Note.save({ title: 'ma deuxième note', parent_id: folder1.id });
-		note1 = await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		note1 = await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		let resource1 = (await Resource.all())[0];
 		const resourcePath = Resource.fullPath(resource1);
 
@@ -98,7 +98,7 @@ describe('services_ResourceService', function() {
 
 	it('should not delete a resource that has never been associated with any note, because it probably means the resource came via sync, and associated note has not arrived yet', asyncTest(async () => {
 		const service = new ResourceService();
-		const resource = await shim.createResourceFromPath(__dirname + '/../tests/support/photo.jpg');
+		const resource = await shim.createResourceFromPath(__dirname + '/support/photo.jpg');
 
 		await service.indexNoteResources();
 		await service.deleteOrphanResources(0);

@@ -47,7 +47,7 @@ Resource.fsDriver_ = fsDriver;
 EncryptionService.fsDriver_ = fsDriver;
 FileApiDriverLocal.fsDriver_ = fsDriver;
 
-const logDir = __dirname + '/../tests/logs';
+const logDir = __dirname + '/logs';
 fs.mkdirpSync(logDir, 0o755);
 
 SyncTargetRegistry.addClass(SyncTargetMemory);
@@ -59,9 +59,9 @@ SyncTargetRegistry.addClass(SyncTargetDropbox);
 // const syncTargetId_ = SyncTargetRegistry.nameToId("nextcloud");
 const syncTargetId_ = SyncTargetRegistry.nameToId("memory");
 //const syncTargetId_ = SyncTargetRegistry.nameToId('filesystem');
-// const syncTargetId_ = SyncTargetRegistry.nameToId('dropbox');
-const syncDir = __dirname + '/../tests/sync';
-
+//const syncTargetId_ = SyncTargetRegistry.nameToId('dropbox');
+const syncDir = __dirname + '/sync';
+		
 const sleepTime = syncTargetId_ == SyncTargetRegistry.nameToId('filesystem') ? 1001 : 100;//400;
 
 console.info('Testing with sync target: ' + SyncTargetRegistry.idToName(syncTargetId_));
@@ -78,7 +78,7 @@ BaseItem.loadClass('Tag', Tag);
 BaseItem.loadClass('NoteTag', NoteTag);
 BaseItem.loadClass('MasterKey', MasterKey);
 
-Setting.setConstant('appId', 'net.cozic.joplin-cli');
+Setting.setConstant('appId', 'com.bmaehr.joplin-cli');
 Setting.setConstant('appType', 'cli');
 
 BaseService.logger_ = logger;

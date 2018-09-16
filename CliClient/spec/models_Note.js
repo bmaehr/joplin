@@ -28,7 +28,7 @@ describe('models_Note', function() {
 		expect(items.length).toBe(1);
 		expect(items[0].id).toBe(note1.id);
 
-		await shim.attachFileToNote(note2, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note2, __dirname + '/support/photo.jpg');
 		note2 = await Note.load(note2.id);
 		items = await Note.linkedItems(note2.body);
 		expect(items.length).toBe(2);

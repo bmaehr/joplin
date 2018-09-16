@@ -180,7 +180,7 @@ describe('services_InteropService', function() {
 		const filePath = exportDir() + '/test.jex';
 		let folder1 = await Folder.save({ title: "folder1" });
 		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
-		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		await shim.attachFileToNote(note1, __dirname + '/support/photo.jpg');
 		note1 = await Note.load(note1.id);
 		let resourceIds = await Note.linkedResourceIds(note1.body);
 		let resource1 = await Resource.load(resourceIds[0]);
