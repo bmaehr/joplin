@@ -236,7 +236,7 @@ class BaseItem extends BaseModel {
 		return propValue;
 	}
 
-	static async serialize(item, type = null, shownKeys = null) {
+	static async serialize(item, type = null, shownKeys = null, format = null) {
 		item = this.filter(item);
 
 		let output = {};
@@ -266,14 +266,30 @@ class BaseItem extends BaseModel {
 
 			output.props.push(key + ': ' + value);
 		}
-
-		let temp = [];
-
-		if (output.title) temp.push(output.title);
-		if (output.body) temp.push(output.body);
-		if (output.props.length) temp.push(output.props.join("\n"));
-
-		return temp.join("\n\n");
+		
+        let result;
+		if (format === 'md') {
+			let temp = [];
+			if (output.props.length) {
+				temp.push('---')
+				temp.push(output.props.join("\n"));
+				temp.push('---\n')				
+			}
+			if (output.title) {
+				temp.push('# ' + output.title + '\n');
+			}
+			if (output.body) {
+				temp.push(output.body + '\n');
+			}
+			result = temp.join('\n');			
+		} else {
+			let temp = [];
+			if (output.title) temp.push(output.title);
+			if (output.body) temp.push(output.body);
+			if (output.props.length) temp.push(output.props.join("\n"));
+			result = temp.join("\n\n");
+		}
+		return result;
 	}
 
 	static encryptionService() {
@@ -283,14 +299,21 @@ class BaseItem extends BaseModel {
 
 	static async serializeForSync(item) {
 		const ItemClass = this.itemClass(item);
-		let serialized = await ItemClass.serialize(item);
-		if (!Setting.value('encryption.enabled') || !ItemClass.encryptionSupported()) {
+		let encryptItem = Setting.value('encryption.enabled') && ItemClass.encryptionSupported();
+		let serialized = await ItemClass.serialize(item, null, null, encryptItem?null:'md');
+		if (!encryptItem) {
 			// Normally not possible since itemsThatNeedSync should only return decrypted items
-			if (!!item.encryption_applied) throw new JoplinError('Item is encrypted but encryption is currently disabled', 'cannotSyncEncrypted');
+			if (!!item.encryption_applied) {
+				throw new JoplinError('Item is encrypted but encryption is currently disabled', 'cannotSyncEncrypted');
+			}
 			return serialized;
 		}
 
-		if (!!item.encryption_applied) { const e = new Error('Trying to encrypt item that is already encrypted'); e.code = 'cannotEncryptEncrypted'; throw e; }
+		if (!!item.encryption_applied) { 
+			const e = new Error('Trying to encrypt item that is already encrypted'); 
+			e.code = 'cannotEncryptEncrypted'; 
+			throw e; 
+		}
 
 		const cipherText = await this.encryptionService().encryptString(serialized);
 
@@ -326,39 +349,76 @@ class BaseItem extends BaseModel {
 	}
 
 	static async unserialize(content) {
-		let lines = content.split("\n");
 		let output = {};
 		let state = 'readingProps';
 		let body = [];
-
-		for (let i = lines.length - 1; i >= 0; i--) {
-			let line = lines[i];
-
-			if (state == 'readingProps') {
-				line = line.trim();
-
-				if (line == '') {
-					state = 'readingBody';
-					continue;
+		if (content) {
+			let lines = content.split("\n");
+			let linesCount = lines.length;
+			if (linesCount>0 && lines[0].trim() === '---') {
+				for (let i = 1; i<linesCount; i++) {
+					let line = lines[i];
+					if (state == 'readingProps') {
+						line = line.trim();
+						
+						if (line == '---') {
+							state = 'readingBody';
+							if (i+1<linesCount && (!lines[i+1] || lines[i+1].trim()==='')) {
+								i++;
+							}
+							continue;
+						}
+						
+						let p = line.indexOf(':');
+						if (p < 0) throw new Error('Invalid property format: ' + line + ": " + content);
+						let key = line.substr(0, p).trim();
+						let value = line.substr(p + 1).trim();
+						output[key] = value;
+					} else if (state == 'readingBody') {
+						body.push(line);
+					}
+				}
+				if (body.length) {
+					let title = body.splice(0, 2);
+					title = title[0];
+					if (title && title.startsWith('# ')) {
+						title = title.substring(2);
+					}
+					output.title = title;
 				}
 
-				let p = line.indexOf(':');
-				if (p < 0) throw new Error('Invalid property format: ' + line + ": " + content);
-				let key = line.substr(0, p).trim();
-				let value = line.substr(p + 1).trim();
-				output[key] = value;
-			} else if (state == 'readingBody') {
-				body.splice(0, 0, line);
-			}
+			} else {
+				for (let i = linesCount - 1; i >= 0; i--) {
+					let line = lines[i];
+
+					if (state == 'readingProps') {
+						line = line.trim();
+
+						if (line == '') {
+							state = 'readingBody';
+							continue;
+						}
+
+						let p = line.indexOf(':');
+						if (p < 0) throw new Error('Invalid property format: ' + line + ": " + content);
+						let key = line.substr(0, p).trim();
+						let value = line.substr(p + 1).trim();
+						output[key] = value;
+					} else if (state == 'readingBody') {
+						body.splice(0, 0, line);
+					}
+				}
+				if (body.length) {
+					let title = body.splice(0, 2);
+					output.title = title[0];
+				}
+			}			
 		}
 
-		if (!output.type_) throw new Error('Missing required property: type_: ' + content);
+		if (!output.type_) {
+			throw new Error('Missing required property: type_: ' + content);
+		}
 		output.type_ = Number(output.type_);
-
-		if (body.length) {
-			let title = body.splice(0, 2);
-			output.title = title[0];
-		}
 
 		if (output.type_ === BaseModel.TYPE_NOTE) output.body = body.join("\n");
 
@@ -655,7 +715,7 @@ class BaseItem extends BaseModel {
 
 	static async save(o, options = null) {
 		if (!options) options = {};
-
+		
 		if (options.userSideValidation === true) {
 			if (!!o.encryption_applied) throw new Error(_('Encrypted items cannot be modified'));
 		}

@@ -11,11 +11,11 @@ class InteropService_Exporter_Md extends InteropService_Exporter_Base {
 		this.destDir_ = destDir;
 		this.resourceDir_ = destDir ? destDir + '/_resources' : null;
 		this.createdDirs_ = [];
-
+		
 		await shim.fsDriver().mkdir(this.destDir_);
 		await shim.fsDriver().mkdir(this.resourceDir_);
 	}
-
+	
 	async makeDirPath_(item) {
 		let output = '';
 		while (true) {
@@ -41,7 +41,7 @@ class InteropService_Exporter_Md extends InteropService_Exporter_Base {
 
 		if (item.type_ === BaseModel.TYPE_NOTE) {
 			const noteFilePath = dirPath + '/' + safeFilename(item.title, null, true) + '.md';
-			const noteContent = await Note.serializeForEdit(item);
+			const noteContent = await Note.serializeForEdit(item, 'md');
 			await shim.fsDriver().writeFile(noteFilePath, noteContent, 'utf-8');
 		}
 	}

@@ -25,14 +25,14 @@ class Note extends BaseItem {
 		return field in fieldsToLabels ? fieldsToLabels[field] : field;
 	}
 
-	static async serialize(note, type = null, shownKeys = null) {
+	static async serialize(note, type = null, shownKeys = null, format = null) {
 		let fieldNames = this.fieldNames();
 		fieldNames.push('type_');
-		return super.serialize(note, 'note', fieldNames);
+		return super.serialize(note, 'note', fieldNames, format);
 	}
 
-	static async serializeForEdit(note) {
-		return super.serialize(note, 'note', ['title', 'body']);
+	static async serializeForEdit(note, format = null) {
+		return super.serialize(note, 'note', ['title', 'body'], format);
 	}
 
 	static async unserializeForEdit(content) {
