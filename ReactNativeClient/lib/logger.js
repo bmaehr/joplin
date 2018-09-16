@@ -4,6 +4,15 @@ const { time } = require('lib/time-utils.js');
 const { FsDriverDummy } = require('lib/fs-driver-dummy.js');
 
 class Logger {
+	
+	static logger() {
+		if (Logger.logger_) {
+		} else {
+			Logger.logger_ = new Logger();
+			Logger.logger_.addTarget('console');					
+		}
+		return Logger.logger_;
+	}
 
 	constructor() {
 		this.targets_ = [];
