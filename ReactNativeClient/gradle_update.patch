@@ -1,6 +1,6 @@
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-document-picker/android/build.gradle node_modules.bak/react-native-document-picker/android/build.gradle
---- node_modules/react-native-document-picker/android/build.gradle	2017-04-25 04:04:44.000000000 +0200
-+++ node_modules.bak/react-native-document-picker/android/build.gradle	2018-09-15 02:02:30.943390900 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-document-picker/android/build.gradle node_modules/react-native-document-picker/android/build.gradle
+--- node_modules.orig/react-native-document-picker/android/build.gradle	2017-04-25 04:04:44.000000000 +0200
++++ node_modules/react-native-document-picker/android/build.gradle	2018-09-15 02:02:30.943390900 +0200
 @@ -1,21 +1,22 @@
  buildscript {
      repositories {
@@ -47,9 +47,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-fetch-blob/android/build.gradle node_modules.bak/react-native-fetch-blob/android/build.gradle
---- node_modules/react-native-fetch-blob/android/build.gradle	2017-08-03 03:35:14.000000000 +0200
-+++ node_modules.bak/react-native-fetch-blob/android/build.gradle	2018-09-15 02:25:53.718287300 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-fetch-blob/android/build.gradle node_modules/react-native-fetch-blob/android/build.gradle
+--- node_modules.orig/react-native-fetch-blob/android/build.gradle	2017-08-03 03:35:14.000000000 +0200
++++ node_modules/react-native-fetch-blob/android/build.gradle	2018-09-15 02:25:53.718287300 +0200
 @@ -1,26 +1,23 @@
  apply plugin: 'com.android.library'
  
@@ -96,9 +96,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    //{RNFetchBlob_PRE_0.28_DEPDENDENCY}
 +    implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-file-viewer/android/build.gradle node_modules.bak/react-native-file-viewer/android/build.gradle
---- node_modules/react-native-file-viewer/android/build.gradle	2017-10-02 18:26:25.000000000 +0200
-+++ node_modules.bak/react-native-file-viewer/android/build.gradle	2018-09-15 02:25:54.141158200 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-file-viewer/android/build.gradle node_modules/react-native-file-viewer/android/build.gradle
+--- node_modules.orig/react-native-file-viewer/android/build.gradle	2017-10-02 18:26:25.000000000 +0200
++++ node_modules/react-native-file-viewer/android/build.gradle	2018-09-15 02:25:54.141158200 +0200
 @@ -1,25 +1,21 @@
  apply plugin: 'com.android.library'
  
@@ -132,9 +132,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
  }
    
 \ Kein Zeilenumbruch am Dateiende.
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-fs/android/build.gradle node_modules.bak/react-native-fs/android/build.gradle
---- node_modules/react-native-fs/android/build.gradle	1985-10-26 09:15:00.000000000 +0100
-+++ node_modules.bak/react-native-fs/android/build.gradle	2018-09-15 02:25:53.724271100 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-fs/android/build.gradle node_modules/react-native-fs/android/build.gradle
+--- node_modules.orig/react-native-fs/android/build.gradle	1985-10-26 09:15:00.000000000 +0100
++++ node_modules/react-native-fs/android/build.gradle	2018-09-15 02:25:53.724271100 +0200
 @@ -1,28 +1,25 @@
 -def safeExtGet(prop, fallback) {
 -    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
@@ -178,9 +178,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-image-picker/android/build.gradle node_modules.bak/react-native-image-picker/android/build.gradle
---- node_modules/react-native-image-picker/android/build.gradle	2018-05-12 20:21:31.000000000 +0200
-+++ node_modules.bak/react-native-image-picker/android/build.gradle	2018-09-15 02:02:30.883579100 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-image-picker/android/build.gradle node_modules/react-native-image-picker/android/build.gradle
+--- node_modules.orig/react-native-image-picker/android/build.gradle	2018-05-12 20:21:31.000000000 +0200
++++ node_modules/react-native-image-picker/android/build.gradle	2018-09-15 02:02:30.883579100 +0200
 @@ -10,22 +10,23 @@
  buildscript {
      repositories {
@@ -236,9 +236,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 +    testImplementation "org.powermock:powermock-classloading-xstream:${POWERMOCK_VERSION}"
 +    testImplementation "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-image-resizer/android/build.gradle node_modules.bak/react-native-image-resizer/android/build.gradle
---- node_modules/react-native-image-resizer/android/build.gradle	2017-05-08 16:36:22.000000000 +0200
-+++ node_modules.bak/react-native-image-resizer/android/build.gradle	2018-09-15 02:25:53.610070000 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-image-resizer/android/build.gradle node_modules/react-native-image-resizer/android/build.gradle
+--- node_modules.orig/react-native-image-resizer/android/build.gradle	2017-05-08 16:36:22.000000000 +0200
++++ node_modules/react-native-image-resizer/android/build.gradle	2018-09-15 02:25:53.610070000 +0200
 @@ -1,25 +1,26 @@
  buildscript {
      repositories {
@@ -283,9 +283,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-push-notification/android/build.gradle node_modules.bak/react-native-push-notification/android/build.gradle
---- node_modules/react-native-push-notification/android/build.gradle	2017-12-02 21:02:06.000000000 +0100
-+++ node_modules.bak/react-native-push-notification/android/build.gradle	2018-09-15 02:27:15.004800500 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-push-notification/android/build.gradle node_modules/react-native-push-notification/android/build.gradle
+--- node_modules.orig/react-native-push-notification/android/build.gradle	2017-12-02 21:02:06.000000000 +0100
++++ node_modules/react-native-push-notification/android/build.gradle	2018-09-15 02:27:15.004800500 +0200
 @@ -1,29 +1,23 @@
  buildscript {
      repositories {
@@ -338,9 +338,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 +    implementation 'com.google.android.gms:play-services-gcm:15.0.1'
 +    implementation 'me.leolin:ShortcutBadger:1.1.22@aar'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-securerandom/android/build.gradle node_modules.bak/react-native-securerandom/android/build.gradle
---- node_modules/react-native-securerandom/android/build.gradle	2017-10-11 19:39:28.000000000 +0200
-+++ node_modules.bak/react-native-securerandom/android/build.gradle	2018-09-15 02:25:53.944683200 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-securerandom/android/build.gradle node_modules/react-native-securerandom/android/build.gradle
+--- node_modules.orig/react-native-securerandom/android/build.gradle	2017-10-11 19:39:28.000000000 +0200
++++ node_modules/react-native-securerandom/android/build.gradle	2018-09-15 02:25:53.944683200 +0200
 @@ -1,34 +1,31 @@
  buildscript {
      repositories {
@@ -383,9 +383,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-share-extension/android/build.gradle node_modules.bak/react-native-share-extension/android/build.gradle
---- node_modules/react-native-share-extension/android/build.gradle	2016-06-10 20:52:50.000000000 +0200
-+++ node_modules.bak/react-native-share-extension/android/build.gradle	2018-09-15 02:25:54.011505100 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-share-extension/android/build.gradle node_modules/react-native-share-extension/android/build.gradle
+--- node_modules.orig/react-native-share-extension/android/build.gradle	2016-06-10 20:52:50.000000000 +0200
++++ node_modules/react-native-share-extension/android/build.gradle	2018-09-15 02:25:54.011505100 +0200
 @@ -1,34 +1,31 @@
  buildscript {
    repositories {
@@ -428,9 +428,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -  compile "com.facebook.react:react-native:+"
 +  implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-sqlite-storage/src/android/build.gradle node_modules.bak/react-native-sqlite-storage/src/android/build.gradle
---- node_modules/react-native-sqlite-storage/src/android/build.gradle	2018-05-28 14:28:26.000000000 +0200
-+++ node_modules.bak/react-native-sqlite-storage/src/android/build.gradle	2018-09-15 02:25:54.114229400 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-sqlite-storage/src/android/build.gradle node_modules/react-native-sqlite-storage/src/android/build.gradle
+--- node_modules.orig/react-native-sqlite-storage/src/android/build.gradle	2018-05-28 14:28:26.000000000 +0200
++++ node_modules/react-native-sqlite-storage/src/android/build.gradle	2018-09-15 02:25:54.114229400 +0200
 @@ -1,34 +1,31 @@
  buildscript {
      repositories {
@@ -473,9 +473,9 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:0.14.+'
 +    implementation 'com.facebook.react:react-native:0.57.0'
  }
-diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules/react-native-vector-icons/android/build.gradle node_modules.bak/react-native-vector-icons/android/build.gradle
---- node_modules/react-native-vector-icons/android/build.gradle	2018-07-28 10:26:36.000000000 +0200
-+++ node_modules.bak/react-native-vector-icons/android/build.gradle	2018-09-15 02:25:54.050400000 +0200
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-vector-icons/android/build.gradle node_modules/react-native-vector-icons/android/build.gradle
+--- node_modules.orig/react-native-vector-icons/android/build.gradle	2018-07-28 10:26:36.000000000 +0200
++++ node_modules/react-native-vector-icons/android/build.gradle	2018-09-15 02:25:54.050400000 +0200
 @@ -1,39 +1,31 @@
  buildscript {
    repositories {
