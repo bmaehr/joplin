@@ -331,7 +331,7 @@ async function initialize(dispatch) {
 	// blobTest();
 
 	Setting.setConstant('env', __DEV__ ? 'dev' : 'prod');
-	Setting.setConstant('appId', 'net.cozic.joplin-mobile');
+	Setting.setConstant('appId', 'com.bmaehr.joplin-mobile');
 	Setting.setConstant('appType', 'mobile');
 	//Setting.setConstant('resourceDir', () => { return RNFetchBlob.fs.dirs.DocumentDir; });
 	Setting.setConstant('resourceDir', RNFetchBlob.fs.dirs.DocumentDir);
