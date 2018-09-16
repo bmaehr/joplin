@@ -2,7 +2,7 @@ package com.bmaehr.joplin.share;
 // import build config
 import com.bmaehr.joplin.BuildConfig;
 
-import com.bmaehr.parkerdan.shareextension.SharePackage;
+import com.alinz.parkerdan.shareextension.SharePackage;
 
 import android.app.Application;
 
