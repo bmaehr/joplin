@@ -338,7 +338,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          ndk {
              abiFilters "armeabi-v7a", "x86"
          }
-@@ -37,11 +31,10 @@
+@@ -44,11 +32,10 @@
  }
  
  dependencies {
