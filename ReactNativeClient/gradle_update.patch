@@ -2,16 +2,16 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 --- node_modules.orig/react-native-document-picker/android/build.gradle	2017-04-25 04:04:44.000000000 +0200
 +++ node_modules/react-native-document-picker/android/build.gradle	2018-09-15 02:02:30.943390900 +0200
 @@ -4,23 +4,19 @@
-        google()
+         google()
      }
      dependencies {
 -        classpath 'com.android.tools.build:gradle:3.1.4'
 +        classpath 'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
 -def safeExtGet(prop, fallback) {
 -    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 -}
@@ -21,19 +21,19 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    buildToolsVersion safeExtGet("buildToolsVersion", '27.0.3')
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
 -        targetSdkVersion safeExtGet('targetSdkVersion', 26)
 +        minSdkVersion 16
 +        targetSdkVersion 28
      }
- 
+
      buildTypes {
 @@ -31,16 +27,6 @@
      }
  }
- 
+
 -allprojects {
 -    repositories {
 -        mavenLocal()
@@ -53,7 +53,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 +++ node_modules/react-native-fetch-blob/android/build.gradle	2018-09-15 02:25:53.718287300 +0200
 @@ -1,26 +1,23 @@
  apply plugin: 'com.android.library'
- 
+
 -repositories {
 -    mavenCentral()
 -}
@@ -68,7 +68,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 +        classpath 'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  android {
 -    compileSdkVersion 23
 -    buildToolsVersion "23.0.1"
@@ -91,7 +91,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    productFlavors {
 -    }
  }
- 
+
  dependencies {
 -    compile 'com.facebook.react:react-native:+'
 -    //{RNFetchBlob_PRE_0.28_DEPDENDENCY}
@@ -102,13 +102,13 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 +++ node_modules/react-native-file-viewer/android/build.gradle	2018-09-15 02:25:54.141158200 +0200
 @@ -5,25 +5,21 @@
  apply plugin: 'com.android.library'
- 
+
  android {
 -    compileSdkVersion safeExtGet('compileSdkVersion', 23)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '25.0.0')
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
 +        minSdkVersion 16
@@ -132,7 +132,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.8'
  }
-   
+
 \ Kein Zeilenumbruch am Dateiende.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-fs/android/build.gradle node_modules/react-native-fs/android/build.gradle
 --- node_modules.orig/react-native-fs/android/build.gradle	1985-10-26 09:15:00.000000000 +0100
@@ -147,21 +147,21 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          jcenter()
 +        google()
      }
- 
+
      dependencies {
 -        classpath 'com.android.tools.build:gradle:1.5.0'
 +        classpath 'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
  android {
 -    compileSdkVersion safeExtGet('compileSdkVersion', 26)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '26.0.3')
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
 -        targetSdkVersion safeExtGet('targetSdkVersion', 26)
@@ -175,7 +175,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          abortOnError false
 @@ -30,5 +27,5 @@
  }
- 
+
  dependencies {
 -    implementation 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.8'
@@ -183,21 +183,17 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-image-picker/android/build.gradle node_modules/react-native-image-picker/android/build.gradle
 --- node_modules.orig/react-native-image-picker/android/build.gradle	2018-05-12 20:21:31.000000000 +0200
 +++ node_modules/react-native-image-picker/android/build.gradle	2018-09-15 02:02:30.883579100 +0200
-@@ -10,27 +10,23 @@
- buildscript {
-     repositories {
-         jcenter()
-         google()
+@@ -14,23 +14,19 @@
      }
- 
+
      dependencies {
 -        classpath 'com.android.tools.build:gradle:2.2.3'
 +        classpath 'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
 -def DEFAULT_COMPILE_SDK_VERSION = 25
 -def DEFAULT_BUILD_TOOLS_VERSION = "25.0.2"
 -def DEFAULT_TARGET_SDK_VERSION = 25
@@ -207,7 +203,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    buildToolsVersion rootProject.hasProperty('buildToolsVersion') ? rootProject.buildToolsVersion : DEFAULT_BUILD_TOOLS_VERSION
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
          minSdkVersion 16
 -        targetSdkVersion rootProject.hasProperty('targetSdkVersion') ? rootProject.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
@@ -215,12 +211,13 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          versionCode 1
          versionName computeVersionName()
      }
-@@ -45,15 +46,15 @@
+@@ -51,15 +47,15 @@
  }
- 
+
  dependencies {
 -    compile "com.facebook.react:react-native:+"  // From node_modules
--    
++    implementation "com.facebook.react:react-native:0.57.8"  // From node_modules
+
 -    testCompile "junit:junit:4.10"
 -    testCompile "org.assertj:assertj-core:1.7.0"
 -    testCompile "org.robolectric:robolectric:3.3.2"
@@ -230,8 +227,6 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    testCompile "org.powermock:powermock-module-junit4-rule:${POWERMOCK_VERSION}"
 -    testCompile "org.powermock:powermock-classloading-xstream:${POWERMOCK_VERSION}"
 -    testCompile "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
-+    implementation "com.facebook.react:react-native:0.57.8"  // From node_modules
-+
 +    testImplementation "junit:junit:4.12"
 +    testImplementation "org.assertj:assertj-core:2.6.0"
 +    testImplementation "org.robolectric:robolectric:3.3.2"
@@ -251,22 +246,22 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          jcenter()
 +        google()
      }
- 
- 
+
+
      dependencies {
 -        classpath 'com.android.tools.build:gradle:2.2.3'
 +        classpath 'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
  android {
 -    compileSdkVersion 23
 -    buildToolsVersion "23.0.1"
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
          minSdkVersion 16
 -        targetSdkVersion 23
@@ -280,7 +275,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 @@ -28,10 +29,6 @@
      }
  }
- 
+
 -repositories {
 -    mavenCentral()
 -}
@@ -292,7 +287,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-push-notification/android/build.gradle node_modules/react-native-push-notification/android/build.gradle
 --- node_modules.orig/react-native-push-notification/android/build.gradle	2017-12-02 21:02:06.000000000 +0100
 +++ node_modules/react-native-push-notification/android/build.gradle	2018-09-15 02:27:15.004800500 +0200
-@@ -1,36 +1,23 @@
+@@ -1,36 +1,24 @@
  buildscript {
      repositories {
          jcenter()
@@ -300,16 +295,16 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      }
      dependencies {
 -        classpath 'com.android.tools.build:gradle:2.1.3'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
-     }
- }
+-    }
+-}
 -
 -allprojects {
 -    repositories {
 -        jcenter()
--    }
--}
--
++        classpath 'com.android.tools.build:gradle:3.1.4'
+     }
+ }
+
  apply plugin: 'com.android.library'
 
 -def DEFAULT_COMPILE_SDK_VERSION = 27
@@ -318,13 +313,13 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -def DEFAULT_SUPPORT_LIB_VERSION = "27.1.1"
 -def DEFAULT_GOOGLE_PLAY_SERVICES_VERSION = "+"
 -def DEFAULT_FIREBASE_MESSAGING_VERSION = "+"
-- 
+-
  android {
 -    compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
 -    buildToolsVersion project.hasProperty('buildToolsVersion') ? project.buildToolsVersion : DEFAULT_BUILD_TOOLS_VERSION
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
          minSdkVersion 16
 -        targetSdkVersion project.hasProperty('targetSdkVersion') ? project.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
@@ -335,10 +330,14 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          ndk {
              abiFilters "armeabi-v7a", "x86"
          }
-@@ -44,11 +32,10 @@
+@@ -44,15 +32,10 @@
  }
- 
+
  dependencies {
+-    def supportLibVersion = project.hasProperty('supportLibVersion') ? project.supportLibVersion : DEFAULT_SUPPORT_LIB_VERSION
+-    def googlePlayServicesVersion = project.hasProperty('googlePlayServicesVersion') ? project.googlePlayServicesVersion : DEFAULT_GOOGLE_PLAY_SERVICES_VERSION
+-    def firebaseVersion = project.hasProperty('firebaseVersion') ? project.firebaseVersion : DEFAULT_FIREBASE_MESSAGING_VERSION
+-
 -    compile fileTree(dir: 'libs', include: ['*.jar'])
 -    testCompile 'junit:junit:4.12'
 -    compile "com.android.support:appcompat-v7:$supportLibVersion"
@@ -362,21 +361,21 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          jcenter()
 +        google()
      }
- 
+
      dependencies {
 -        classpath 'com.android.tools.build:gradle:1.3.1'
 +        classpath 'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
  android {
 -    compileSdkVersion 23
 -    buildToolsVersion "25.0.0"
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
          minSdkVersion 16
 -        targetSdkVersion 22
@@ -389,7 +388,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          abortOnError false
      }
  }
- 
+
 -repositories {
 -    mavenCentral()
 -}
@@ -407,21 +406,21 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      jcenter()
 +    google()
    }
- 
+
    dependencies {
 -    classpath 'com.android.tools.build:gradle:1.1.3'
 +    classpath 'com.android.tools.build:gradle:3.1.4'
    }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
  android {
 -  compileSdkVersion 23
 -  buildToolsVersion "23.0.1"
 +  compileSdkVersion 28
 +  buildToolsVersion '28.0.2'
- 
+
    defaultConfig {
      minSdkVersion 16
 -    targetSdkVersion 22
@@ -434,7 +433,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      abortOnError false
    }
  }
- 
+
 -repositories {
 -  mavenCentral()
 -}
@@ -446,21 +445,17 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-sqlite-storage/src/android/build.gradle node_modules/react-native-sqlite-storage/src/android/build.gradle
 --- node_modules.orig/react-native-sqlite-storage/src/android/build.gradle	2018-05-28 14:28:26.000000000 +0200
 +++ node_modules/react-native-sqlite-storage/src/android/build.gradle	2018-09-15 02:25:54.114229400 +0200
-@@ -1,39 +1,31 @@
- buildscript {
-     repositories {
-         jcenter()
-         google()
+@@ -5,35 +5,27 @@
      }
- 
+
      dependencies {
 -        classpath 'com.android.tools.build:gradle:3.1.4'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath  'com.android.tools.build:gradle:3.1.4'
      }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
 -def safeExtGet(prop, fallback) {
 -    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 -}
@@ -470,7 +465,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    buildToolsVersion safeExtGet('buildToolsVersion', '23.0.1')
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
- 
+
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
 -        targetSdkVersion safeExtGet('targetSdkVersion', 22)
@@ -484,7 +479,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          abortOnError false
      }
  }
- 
+
 -repositories {
 -    mavenCentral()
 -}
@@ -493,6 +488,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile 'com.facebook.react:react-native:0.14.+'
 +    implementation 'com.facebook.react:react-native:0.57.8'
  }
+
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-vector-icons/android/build.gradle node_modules/react-native-vector-icons/android/build.gradle
 --- node_modules.orig/react-native-vector-icons/android/build.gradle	2018-07-28 10:26:36.000000000 +0200
 +++ node_modules/react-native-vector-icons/android/build.gradle	2018-09-15 02:25:54.050400000 +0200
@@ -502,15 +498,15 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      jcenter()
      google()
    }
- 
+
    dependencies {
 -    classpath 'com.android.tools.build:gradle:3.1.4'
 +    classpath 'com.android.tools.build:gradle:3.1.4'
    }
  }
- 
+
  apply plugin: 'com.android.library'
- 
+
 -def safeExtGet(prop, fallback) {
 -    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 -}
@@ -521,7 +517,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -  buildToolsVersion safeExtGet('buildToolsVersion', '26.0.3')
 +  compileSdkVersion 28
 +  buildToolsVersion '28.0.2'
- 
+
    defaultConfig {
 -    minSdkVersion safeExtGet('minSdkVersion', 16)
 -    targetSdkVersion safeExtGet('targetSdkVersion', 26)
@@ -535,7 +531,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      abortOnError false
    }
  }
- 
+
 -repositories {
 -  mavenCentral()
 -}
