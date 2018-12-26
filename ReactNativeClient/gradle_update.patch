@@ -2,9 +2,6 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 --- node_modules.orig/react-native-document-picker/android/build.gradle	2017-04-25 04:04:44.000000000 +0200
 +++ node_modules/react-native-document-picker/android/build.gradle	2018-09-15 02:02:30.943390900 +0200
 @@ -4,23 +4,19 @@
- buildscript {
-     repositories {
-        jcenter()
         google()
      }
      dependencies {
