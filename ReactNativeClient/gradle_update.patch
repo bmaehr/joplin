@@ -499,7 +499,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-vector-icons/android/build.gradle node_modules/react-native-vector-icons/android/build.gradle
 --- node_modules.orig/react-native-vector-icons/android/build.gradle	2018-07-28 10:26:36.000000000 +0200
 +++ node_modules/react-native-vector-icons/android/build.gradle	2018-09-15 02:25:54.050400000 +0200
-@@ -1,39 +1,31 @@
+@@ -1,40 +1,31 @@
  buildscript {
    repositories {
      jcenter()
