@@ -295,7 +295,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-push-notification/android/build.gradle node_modules/react-native-push-notification/android/build.gradle
 --- node_modules.orig/react-native-push-notification/android/build.gradle	2017-12-02 21:02:06.000000000 +0100
 +++ node_modules/react-native-push-notification/android/build.gradle	2018-09-15 02:27:15.004800500 +0200
-@@ -1,24 +1,36 @@
+@@ -1,36 +1,24 @@
  buildscript {
      repositories {
          jcenter()
@@ -321,7 +321,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -def DEFAULT_SUPPORT_LIB_VERSION = "27.1.1"
 -def DEFAULT_GOOGLE_PLAY_SERVICES_VERSION = "+"
 -def DEFAULT_FIREBASE_MESSAGING_VERSION = "+"
- 
+- 
  android {
 -    compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
 -    buildToolsVersion project.hasProperty('buildToolsVersion') ? project.buildToolsVersion : DEFAULT_BUILD_TOOLS_VERSION
