@@ -100,9 +100,13 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-file-viewer/android/build.gradle node_modules/react-native-file-viewer/android/build.gradle
 --- node_modules.orig/react-native-file-viewer/android/build.gradle	2017-10-02 18:26:25.000000000 +0200
 +++ node_modules/react-native-file-viewer/android/build.gradle	2018-09-15 02:25:54.141158200 +0200
-@@ -5,25 +5,21 @@
+@@ -1,29 +1,21 @@
  apply plugin: 'com.android.library'
 
+-def safeExtGet(prop, fallback) {
+-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+-}
+-
  android {
 -    compileSdkVersion safeExtGet('compileSdkVersion', 23)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '25.0.0')
@@ -111,8 +115,8 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
-+        minSdkVersion 16
 -        targetSdkVersion safeExtGet('targetSdkVersion', 22)
++        minSdkVersion 16
 +        targetSdkVersion 28
          versionCode 1
 -        versionName "1.0"
@@ -122,18 +126,16 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
          abortOnError false
      }
  }
--
+
 -repositories {
 -    mavenCentral()
 -}
 -
-+
  dependencies {
 -    compile 'com.facebook.react:react-native:+'
 +    implementation 'com.facebook.react:react-native:0.57.8'
  }
 
-\ Kein Zeilenumbruch am Dateiende.
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-fs/android/build.gradle node_modules/react-native-fs/android/build.gradle
 --- node_modules.orig/react-native-fs/android/build.gradle	1985-10-26 09:15:00.000000000 +0100
 +++ node_modules/react-native-fs/android/build.gradle	2018-09-15 02:25:53.724271100 +0200
