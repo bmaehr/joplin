@@ -27,8 +27,8 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
  
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
-+        minSdkVersion 16
 -        targetSdkVersion safeExtGet('targetSdkVersion', 26)
++        minSdkVersion 16
 +        targetSdkVersion 28
      }
  
