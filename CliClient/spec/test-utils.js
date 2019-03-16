@@ -4,6 +4,7 @@ const { DatabaseDriverNode } = require('lib/database-driver-node.js');
 const BaseModel = require('lib/BaseModel.js');
 const Folder = require('lib/models/Folder.js');
 const Note = require('lib/models/Note.js');
+const ItemChange = require('lib/models/ItemChange.js');
 const Resource = require('lib/models/Resource.js');
 const Tag = require('lib/models/Tag.js');
 const NoteTag = require('lib/models/NoteTag.js');
@@ -47,8 +48,10 @@ Resource.fsDriver_ = fsDriver;
 EncryptionService.fsDriver_ = fsDriver;
 FileApiDriverLocal.fsDriver_ = fsDriver;
 
-const logDir = __dirname + '/logs';
+const logDir = __dirname + '/../tests/logs';
+const tempDir = __dirname + '/../tests/tmp';
 fs.mkdirpSync(logDir, 0o755);
+fs.mkdirpSync(tempDir, 0o755);
 
 SyncTargetRegistry.addClass(SyncTargetMemory);
 SyncTargetRegistry.addClass(SyncTargetFilesystem);
@@ -80,6 +83,7 @@ BaseItem.loadClass('MasterKey', MasterKey);
 
 Setting.setConstant('appId', 'com.bmaehr.joplin-cli');
 Setting.setConstant('appType', 'cli');
+Setting.setConstant('tempDir', tempDir);
 
 BaseService.logger_ = logger;
 
@@ -119,6 +123,8 @@ async function switchClient(id) {
 async function clearDatabase(id = null) {
 	if (id === null) id = currentClient_;
 
+	await ItemChange.waitForAllSaved();
+
 	let queries = [
 		'DELETE FROM notes',
 		'DELETE FROM folders',
@@ -131,6 +137,7 @@ async function clearDatabase(id = null) {
 		'DELETE FROM settings',		
 		'DELETE FROM deleted_items',
 		'DELETE FROM sync_items',
+		'DELETE FROM notes_normalized',
 	];
 
 	await databases_[id].transactionExecBatch(queries);

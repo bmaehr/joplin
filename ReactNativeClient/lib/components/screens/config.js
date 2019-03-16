@@ -9,9 +9,11 @@ const { themeStyle } = require('lib/components/global-style.js');
 const Setting = require('lib/models/Setting.js');
 const shared = require('lib/components/shared/config-shared.js');
 const SyncTargetRegistry = require('lib/SyncTargetRegistry');
+const { reg } = require('lib/registry.js');
+import VersionInfo from 'react-native-version-info';
 
 class ConfigScreenComponent extends BaseScreenComponent {
-	
+
 	static navigationOptions(options) {
 		return { header: null };
 	}
@@ -82,10 +84,10 @@ class ConfigScreenComponent extends BaseScreenComponent {
 			},
 		}
 
-		if (Platform.OS === 'ios') {
+		// if (Platform.OS === 'ios') {
 			styles.settingControl.borderBottomWidth = 1;
-			styles.settingControl.borderBottomColor = theme.dividerColor;
-		}
+			styles.settingControl.borderBottomColor = theme.strongDividerColor;
+		// }
 
 		styles.switchSettingText = Object.assign({}, styles.settingText);
 		styles.switchSettingText.width = '80%';
@@ -229,7 +231,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 				</TouchableOpacity>
 			</View>
 		);
-		
+
 		settingComps.push(
 			<View key="website_link" style={this.styles().settingContainer}>
 				<TouchableOpacity onPress={() => { Linking.openURL('https://joplin.cozic.net/') }}>
@@ -243,6 +245,24 @@ class ConfigScreenComponent extends BaseScreenComponent {
 				<TouchableOpacity onPress={() => { Linking.openURL('https://joplin.cozic.net/privacy/') }}>
 					<Text key="label" style={this.styles().linkText}>Privacy Policy</Text>
 				</TouchableOpacity>
+			</View>
+		);
+
+		settingComps.push(
+			<View key="version_info_app" style={this.styles().settingContainer}>
+					<Text style={this.styles().settingText}>{"Joplin " + VersionInfo.appVersion}</Text>
+			</View>
+		);
+
+		settingComps.push(
+			<View key="version_info_db" style={this.styles().settingContainer}>
+				<Text style={this.styles().settingText}>{_('Database v%s', reg.db().version())}</Text>
+			</View>
+		);
+
+		settingComps.push(
+			<View key="version_info_fts" style={this.styles().settingContainer}>
+				<Text style={this.styles().settingText}>{_('FTS enabled: %d', this.props.settings['db.ftsEnabled'])}</Text>
 			</View>
 		);
 

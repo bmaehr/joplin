@@ -102,7 +102,7 @@ function shimInit() {
 		}
 	}
 
-	shim.createResourceFromPath = async function(filePath) {
+	shim.createResourceFromPath = async function(filePath, defaultProps = null) {
 		const readChunk = require('read-chunk');
 		const imageType = require('image-type');
 
@@ -112,8 +112,12 @@ function shimInit() {
 
 		if (!(await fs.pathExists(filePath))) throw new Error(_('Cannot access %s', filePath));
 
+		defaultProps = defaultProps ? defaultProps : {};
+
+		const resourceId = defaultProps.id ? defaultProps.id : uuid.create();
+
 		let resource = Resource.new();
-		resource.id = uuid.create();
+		resource.id = resourceId;
 		resource.mime = mime.getType(filePath);
 		resource.title = basename(filePath);
 
@@ -144,9 +148,11 @@ function shimInit() {
 			await fs.copy(filePath, targetPath, { overwrite: true });
 		}
 
-		await Resource.save(resource, { isNew: true });
+		if (defaultProps) {
+			resource = Object.assign({}, resource, defaultProps);
+		}
 
-		return resource;
+		return await Resource.save(resource, { isNew: true });
 	}
 
 	shim.attachFileToNote = async function(note, filePath, position = null) {
@@ -174,16 +180,30 @@ function shimInit() {
 		if (shim.isElectron()) {
 			const nativeImage = require('electron').nativeImage;
 			let image = nativeImage.createFromDataURL(imageDataUrl);
-			if (options.cropRect) image = image.crop(options.cropRect);
+			if (image.isEmpty()) throw new Error('Could not convert data URL to image'); // Would throw for example if the image format is no supported (eg. image/gif)
+			if (options.cropRect) {
+				// Crop rectangle values need to be rounded or the crop() call will fail
+				const c = options.cropRect;
+				if ('x' in c) c.x = Math.round(c.x);
+				if ('y' in c) c.y = Math.round(c.y);
+				if ('width' in c) c.width = Math.round(c.width);
+				if ('height' in c) c.height = Math.round(c.height);
+				image = image.crop(c);
+			}
 			const mime = mimeUtils.fromDataUrl(imageDataUrl);
 			await shim.writeImageToFile(image, mime, filePath);
 		} else {
-			throw new Error('Node support not implemented');
+			if (options.cropRect) throw new Error('Crop rect not supported in Node');
+
+			const imageDataURI = require('image-data-uri');
+			const result = imageDataURI.decode(imageDataUrl);
+			await shim.fsDriver().writeFile(filePath, result.dataBuffer, 'buffer');	
 		}
 	}
 
 	const nodeFetch = require('node-fetch');
 
+	// Not used??
 	shim.readLocalFileBase64 = (path) => {
 		const data = fs.readFileSync(path);
 		return new Buffer(data).toString('base64');
@@ -227,7 +247,7 @@ function shimInit() {
 			host: url.hostname,
 			port: url.port,
 			method: method,
-			path: url.path + (url.query ? '?' + url.query : ''),
+			path: url.pathname + (url.query ? '?' + url.query : ''),
 			headers: headers,
 		};
 

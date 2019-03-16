@@ -3,9 +3,10 @@ package com.bmaehr.joplin;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage;
+import org.reactnative.camera.RNCameraPackage;
 import com.vinzscam.reactnativefileviewer.RNFileViewerPackage;
 import net.rhogan.rnsecurerandom.RNSecureRandomPackage;
-import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage;
 import com.imagepicker.ImagePickerPackage;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactNativeHost;
@@ -21,6 +22,8 @@ import org.pgsqlite.SQLitePluginPackage;
 
 import com.alinz.parkerdan.shareextension.SharePackage;
 
+import cx.evermeet.versioninfo.RNVersionInfoPackage;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,18 +38,20 @@ public class MainApplication extends Application implements ReactApplication {
 		@Override
 		protected List<ReactPackage> getPackages() {
 			return Arrays.<ReactPackage>asList(
-				new ImageResizerPackage(),
 				new MainReactPackage(),
-            new RNFileViewerPackage(),
-            new RNSecureRandomPackage(),
             new ReactNativePushNotificationPackage(),
+				new ImageResizerPackage(),
+				new RNCameraPackage(),
+				new RNFileViewerPackage(),
+				new RNSecureRandomPackage(),
 				new ImagePickerPackage(),
 				new ReactNativeDocumentPicker(),
 				new RNFetchBlobPackage(),
 				new RNFSPackage(),
 				new SQLitePluginPackage(),
 				new VectorIconsPackage(),
-				new SharePackage()
+				new SharePackage(),
+				new RNVersionInfoPackage()
 			);
 		}
 	};

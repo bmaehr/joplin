@@ -2,6 +2,8 @@ const { uuid } = require('lib/uuid.js');
 const { promiseChain } = require('lib/promise-utils.js');
 const { time } = require('lib/time-utils.js');
 const { Database } = require('lib/database.js');
+const { sprintf } = require('sprintf-js');
+const Resource = require('lib/models/Resource');
 
 const structureSql = `
 CREATE TABLE folders (
@@ -123,6 +125,7 @@ class JoplinDatabase extends Database {
 		super(driver);
 		this.initialized_ = false;
 		this.tableFields_ = null;
+		this.version_ = null;
 	}
 
 	initialized() {
@@ -143,10 +146,66 @@ class JoplinDatabase extends Database {
 		return output;
 	}
 
-	tableFields(tableName) {
+	tableFields(tableName, options = null) {
+		if (options === null) options = {};
+
 		if (!this.tableFields_) throw new Error('Fields have not been loaded yet');
 		if (!this.tableFields_[tableName]) throw new Error('Unknown table: ' + tableName);
-		return this.tableFields_[tableName];
+		const output = this.tableFields_[tableName].slice();
+
+		if (options.includeDescription) {
+			for (let i = 0; i < output.length; i++) {
+				output[i].description = this.fieldDescription(tableName, output[i].name);
+			}
+		}
+
+		return output;
+	}
+
+	createDefaultRow(tableName) {
+		const row = {};
+		const fields = this.tableFields('resource_local_states');
+		for (let i = 0; i < fields.length; i++) {
+			const f = fields[i];
+			row[f.name] = Database.formatValue(f.type, f.default);
+		}
+		return row;
+	}
+
+	fieldDescription(tableName, fieldName) {		
+		const sp = sprintf;
+
+		if (!this.tableDescriptions_) {
+			this.tableDescriptions_ = {
+				notes: {
+					parent_id: sp('ID of the notebook that contains this note. Change this ID to move the note to a different notebook.'),
+					body: sp('The note body, in Markdown. May also contain HTML.'),
+					is_conflict: sp('Tells whether the note is a conflict or not.'),
+					is_todo: sp('Tells whether this note is a todo or not.'),
+					todo_due: sp('When the todo is due. An alarm will be triggered on that date.'),
+					todo_completed: sp('Tells whether todo is completed or not. This is a timestamp in milliseconds.'),
+					source_url: sp('The full URL where the note comes from.'),
+				},
+				folders: {},
+				resources: {},
+				tags: {},
+			};
+
+			const baseItems = ['notes', 'folders', 'tags', 'resources'];
+
+			for (let i = 0; i < baseItems.length; i++) {
+				const n = baseItems[i];
+				const singular = n.substr(0, n.length - 1);
+				this.tableDescriptions_[n].title = sp('The %s title.', singular);
+				this.tableDescriptions_[n].created_time = sp('When the %s was created.', singular);
+				this.tableDescriptions_[n].updated_time = sp('When the %s was last updated.', singular);
+				this.tableDescriptions_[n].user_created_time = sp('When the %s was created. It may differ from created_time as it can be manually set by the user.', singular);
+				this.tableDescriptions_[n].user_updated_time = sp('When the %s was last updated. It may differ from updated_time as it can be manually set by the user.', singular);
+			}
+		}
+
+		const d = this.tableDescriptions_[tableName];
+		return d && d[fieldName] ? d[fieldName] : '';
 	}
 
 	refreshTableFields() {
@@ -161,6 +220,7 @@ class JoplinDatabase extends Database {
 				if (tableName == 'android_metadata') continue;
 				if (tableName == 'table_fields') continue;
 				if (tableName == 'sqlite_sequence') continue;
+				if (tableName.indexOf('notes_fts') === 0) continue;
 				chain.push(() => {
 					return this.selectAll('PRAGMA table_info("' + tableName + '")').then((pragmas) => {
 						for (let i = 0; i < pragmas.length; i++) {
@@ -202,7 +262,8 @@ class JoplinDatabase extends Database {
 		// default value and thus might cause problems. In that case, the default value
 		// must be set in the synchronizer too.
 
-		const existingDatabaseVersions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+		// Note: v16 and v17 don't do anything. They were used to debug an issue.
+		const existingDatabaseVersions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
 		let currentVersionIndex = existingDatabaseVersions.indexOf(fromVersion);
 
@@ -210,7 +271,9 @@ class JoplinDatabase extends Database {
 		// version of the database, so that migration is not run in this case.
 		if (currentVersionIndex < 0) throw new Error('Unknown profile version. Most likely this is an old version of Joplin, while the profile was created by a newer version. Please upgrade Joplin at https://joplin.cozic.net and try again.');
 
-		if (currentVersionIndex == existingDatabaseVersions.length - 1) return false;
+		if (currentVersionIndex == existingDatabaseVersions.length - 1) return fromVersion;
+
+		let latestVersion = fromVersion;
 
 		while (currentVersionIndex < existingDatabaseVersions.length - 1) {
 			const targetVersion = existingDatabaseVersions[currentVersionIndex + 1];
@@ -348,13 +411,145 @@ class JoplinDatabase extends Database {
 				queries.push('ALTER TABLE folders ADD COLUMN parent_id TEXT NOT NULL DEFAULT ""');
 			}
 
-			queries.push({ sql: 'UPDATE version SET version = ?', params: [targetVersion] });
-			await this.transactionExecBatch(queries);
+			if (targetVersion == 13) {
+				queries.push('ALTER TABLE resources ADD COLUMN fetch_status INT NOT NULL DEFAULT "2"');
+				queries.push('ALTER TABLE resources ADD COLUMN fetch_error TEXT NOT NULL DEFAULT ""');
+				queries.push({ sql: 'UPDATE resources SET fetch_status = ?', params: [Resource.FETCH_STATUS_DONE] });
+			}
 
+			if (targetVersion == 14) {
+				const resourceLocalStates = `
+					CREATE TABLE resource_local_states (
+						id INTEGER PRIMARY KEY,
+						resource_id TEXT NOT NULL,
+						fetch_status INT NOT NULL DEFAULT "2",
+						fetch_error TEXT NOT NULL DEFAULT ""
+					);
+				`;
+
+				queries.push(this.sqlStringToLines(resourceLocalStates)[0]);
+
+				queries.push('INSERT INTO resource_local_states SELECT null, id, fetch_status, fetch_error FROM resources');
+
+				queries.push('CREATE INDEX resource_local_states_resource_id ON resource_local_states (resource_id)');
+				queries.push('CREATE INDEX resource_local_states_resource_fetch_status ON resource_local_states (fetch_status)');
+
+				queries = queries.concat(this.alterColumnQueries('resources', {
+					id: 'TEXT PRIMARY KEY',
+					title: 'TEXT NOT NULL DEFAULT ""',
+					mime: 'TEXT NOT NULL',
+					filename: 'TEXT NOT NULL DEFAULT ""',
+					created_time: 'INT NOT NULL',
+					updated_time: 'INT NOT NULL',
+					user_created_time: 'INT NOT NULL DEFAULT 0',
+					user_updated_time: 'INT NOT NULL DEFAULT 0',
+					file_extension: 'TEXT NOT NULL DEFAULT ""',
+					encryption_cipher_text: 'TEXT NOT NULL DEFAULT ""',
+					encryption_applied: 'INT NOT NULL DEFAULT 0',
+					encryption_blob_encrypted: 'INT NOT NULL DEFAULT 0',
+				}));
+			}
+
+			if (targetVersion == 15) {
+				queries.push('CREATE VIRTUAL TABLE notes_fts USING fts4(content="notes", notindexed="id", id, title, body)');
+				queries.push('INSERT INTO notes_fts(docid, id, title, body) SELECT rowid, id, title, body FROM notes WHERE is_conflict = 0 AND encryption_applied = 0');
+
+				// Keep the content tables (notes) and the FTS table (notes_fts) in sync.
+				// More info at https://www.sqlite.org/fts3.html#_external_content_fts4_tables_
+				queries.push(`
+					CREATE TRIGGER notes_fts_before_update BEFORE UPDATE ON notes BEGIN
+						DELETE FROM notes_fts WHERE docid=old.rowid;
+					END;`);
+				queries.push(`
+					CREATE TRIGGER notes_fts_before_delete BEFORE DELETE ON notes BEGIN
+						DELETE FROM notes_fts WHERE docid=old.rowid;
+					END;`);
+				queries.push(`
+					CREATE TRIGGER notes_after_update AFTER UPDATE ON notes BEGIN
+						INSERT INTO notes_fts(docid, id, title, body) SELECT rowid, id, title, body FROM notes WHERE is_conflict = 0 AND encryption_applied = 0 AND new.rowid = notes.rowid;
+					END;`);
+				queries.push(`
+					CREATE TRIGGER notes_after_insert AFTER INSERT ON notes BEGIN
+						INSERT INTO notes_fts(docid, id, title, body) SELECT rowid, id, title, body FROM notes WHERE is_conflict = 0 AND encryption_applied = 0 AND new.rowid = notes.rowid;
+					END;`);
+			}
+
+			if (targetVersion == 18) {
+				const notesNormalized = `
+					CREATE TABLE notes_normalized (
+						id TEXT NOT NULL,
+						title TEXT NOT NULL DEFAULT "",
+						body TEXT NOT NULL DEFAULT "" 
+					);
+				`;
+
+				queries.push(this.sqlStringToLines(notesNormalized)[0]);
+
+				queries.push('CREATE INDEX notes_normalized_id ON notes_normalized (id)');
+
+				queries.push('DROP TRIGGER IF EXISTS notes_fts_before_update');
+				queries.push('DROP TRIGGER IF EXISTS notes_fts_before_delete');
+				queries.push('DROP TRIGGER IF EXISTS notes_after_update');
+				queries.push('DROP TRIGGER IF EXISTS notes_after_insert');
+				queries.push('DROP TABLE IF EXISTS notes_fts');
+
+				queries.push('CREATE VIRTUAL TABLE notes_fts USING fts4(content="notes_normalized", notindexed="id", id, title, body)');
+
+				// Keep the content tables (notes) and the FTS table (notes_fts) in sync.
+				// More info at https://www.sqlite.org/fts3.html#_external_content_fts4_tables_
+				queries.push(`
+					CREATE TRIGGER notes_fts_before_update BEFORE UPDATE ON notes_normalized BEGIN
+						DELETE FROM notes_fts WHERE docid=old.rowid;
+					END;`);
+				queries.push(`
+					CREATE TRIGGER notes_fts_before_delete BEFORE DELETE ON notes_normalized BEGIN
+						DELETE FROM notes_fts WHERE docid=old.rowid;
+					END;`);
+				queries.push(`
+					CREATE TRIGGER notes_after_update AFTER UPDATE ON notes_normalized BEGIN
+						INSERT INTO notes_fts(docid, id, title, body) SELECT rowid, id, title, body FROM notes_normalized WHERE new.rowid = notes_normalized.rowid;
+					END;`);
+				queries.push(`
+					CREATE TRIGGER notes_after_insert AFTER INSERT ON notes_normalized BEGIN
+						INSERT INTO notes_fts(docid, id, title, body) SELECT rowid, id, title, body FROM notes_normalized WHERE new.rowid = notes_normalized.rowid;
+					END;`);
+			}
+
+			queries.push({ sql: 'UPDATE version SET version = ?', params: [targetVersion] });
+
+			try {
+				await this.transactionExecBatch(queries);
+			} catch (error) {
+				if (targetVersion === 15 || targetVersion === 18) {
+					this.logger().warn('Could not upgrade to database v15 or v18 - FTS feature will not be used', error);
+				} else {
+					throw error;
+				}
+			}
+
+			latestVersion = targetVersion;
+			
 			currentVersionIndex++;
 		}
 
+		return latestVersion;
+	}
+
+	async ftsEnabled() {
+		try {
+			await this.selectOne('SELECT count(*) FROM notes_fts');
+		} catch (error) {
+			this.logger().warn('FTS check failed', error);
+			return false;
+		}
+
+		this.logger().info('FTS check succeeded');
+
 		return true;
+	}
+
+	version() {
+		return this.version_;
 	}
 
 	async initialize() {
@@ -373,10 +568,12 @@ class JoplinDatabase extends Database {
 		}
 
 		const version = !versionRow ? 0 : versionRow.version;
+		this.version_ = version;
 		this.logger().info('Current database version', version);
 
-		const upgraded = await this.upgradeDatabase(version);
-		if (upgraded) await this.refreshTableFields();
+		const newVersion = await this.upgradeDatabase(version);
+		this.version_ = newVersion;
+		if (newVersion !== version) await this.refreshTableFields();
 
 		this.tableFields_ = {};
 

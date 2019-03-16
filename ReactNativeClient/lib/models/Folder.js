@@ -15,13 +15,6 @@ class Folder extends BaseItem {
 		return 'folders';
 	}
 
-	static async serialize(folder) {
-		let fieldNames = this.fieldNames();
-		fieldNames.push('type_');
-		//lodash.pull(fieldNames, 'parent_id');
-		return super.serialize(folder, 'folder', fieldNames);
-	}
-
 	static modelType() {
 		return BaseModel.TYPE_FOLDER;
 	}
@@ -31,6 +24,15 @@ class Folder extends BaseItem {
 			id: null,
 			title: '',
 		}
+	}
+
+	static fieldToLabel(field) {
+		const fieldsToLabels = {
+			title: _('title'),
+			last_note_user_updated_time: _('updated date'),
+		};
+
+		return field in fieldsToLabels ? fieldsToLabels[field] : field;
 	}
 
 	static noteIds(parentId) {
@@ -105,6 +107,62 @@ class Folder extends BaseItem {
 		};
 	}
 
+	// Folders that contain notes that have been modified recently go on top.
+	// The remaining folders, that don't contain any notes are sorted by their own user_updated_time
+	static async orderByLastModified(folders, dir = 'DESC') {
+		dir = dir.toUpperCase();
+		const sql = 'select parent_id, max(user_updated_time) content_updated_time from notes where parent_id != "" group by parent_id';
+		const rows = await this.db().selectAll(sql);
+
+		const folderIdToTime = {};
+		for (let i = 0; i < rows.length; i++) {
+			const row = rows[i];
+			folderIdToTime[row.parent_id] = row.content_updated_time;
+		}
+
+		const findFolderParent = folderId => {
+			const folder = BaseModel.byId(folders, folderId);
+			if (!folder) return null; // For the rare case of notes that are associated with a no longer existing folder
+			if (!folder.parent_id) return null;
+			for (let i = 0; i < folders.length; i++) {
+				if (folders[i].id === folder.parent_id) return folders[i];
+			}
+			throw new Error('Could not find parent');
+		}
+
+		const applyChildTimeToParent = folderId => {
+			const parent = findFolderParent(folderId);
+			if (!parent) return;
+
+			if (folderIdToTime[parent.id] && folderIdToTime[parent.id] >= folderIdToTime[folderId]) {
+				// Don't change so that parent has the same time as the last updated child
+			} else {
+				folderIdToTime[parent.id] = folderIdToTime[folderId];
+			}
+			
+			applyChildTimeToParent(parent.id);
+		}
+
+		for (let folderId in folderIdToTime) {
+			if (!folderIdToTime.hasOwnProperty(folderId)) continue;
+			applyChildTimeToParent(folderId);
+		}
+
+		const mod = dir === 'DESC' ? +1 : -1;
+		const output = folders.slice();
+		output.sort((a, b) => {
+			const aTime = folderIdToTime[a.id] ? folderIdToTime[a.id] : a.user_updated_time;
+			const bTime = folderIdToTime[b.id] ? folderIdToTime[b.id] : b.user_updated_time;
+
+			if (aTime < bTime) return +1 * mod;
+			if (aTime > bTime) return -1 * mod;
+
+			return 0;
+		});
+
+		return output;
+	}
+
 	static async all(options = null) {
 		let output = await super.all(options);
 		if (options && options.includeConflictFolder) {
@@ -157,6 +215,34 @@ class Folder extends BaseItem {
 		}
 
 		return getNestedChildren(all, '');
+	}
+
+	static buildTree(folders) {
+		const idToFolders = {};
+		for (let i = 0; i < folders.length; i++) {
+			idToFolders[folders[i].id] = folders[i];
+			idToFolders[folders[i].id].children = [];
+		}
+
+		const rootFolders = [];
+		for (let folderId in idToFolders) {
+			if (!idToFolders.hasOwnProperty(folderId)) continue;
+
+			const folder = idToFolders[folderId];
+			if (!folder.parent_id) {
+				rootFolders.push(folder);
+			} else {
+				if (!idToFolders[folder.parent_id]) {
+					// It means the notebook is refering a folder that doesn't exist. In theory it shouldn't happen
+					// but sometimes does - https://github.com/laurent22/joplin/issues/1068#issuecomment-450594708
+					rootFolders.push(folder);
+				} else {
+					idToFolders[folder.parent_id].children.push(folder);
+				}
+			}
+		}
+
+		return rootFolders;
 	}
 
 	static load(id) {
@@ -220,10 +306,19 @@ class Folder extends BaseItem {
 			}
 		}
 
-		if (options.duplicateCheck === true && o.title) {
-			let existingFolder = await Folder.loadByTitle(o.title);
-			if (existingFolder && existingFolder.id != o.id) throw new Error(_('A notebook with this title already exists: "%s"', o.title));
-		}
+		// We allow folders with duplicate titles so that folders with the same title can exist under different parent folder. For example:
+		//
+		// PHP
+		//     Code samples
+		//     Doc
+		// Java
+		//     My project
+		//     Doc
+
+		// if (options.duplicateCheck === true && o.title) {
+		// 	let existingFolder = await Folder.loadByTitle(o.title);
+		// 	if (existingFolder && existingFolder.id != o.id) throw new Error(_('A notebook with this title already exists: "%s"', o.title));
+		// }
 
 		if (options.reservedTitleCheck === true && o.title) {
 			if (o.title == Folder.conflictFolderTitle()) throw new Error(_('Notebooks cannot be named "%s", which is a reserved title.', o.title));

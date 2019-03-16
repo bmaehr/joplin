@@ -30,6 +30,21 @@
 		return output;
 	}
 
+	function getImageSizes(element) {
+		const images = element.getElementsByTagName('img');
+		const output = {};
+		for (let i = 0; i < images.length; i++) {
+			const img = images[i];
+			output[img.src] = {
+				width: img.width,
+				height: img.height,
+				naturalWidth: img.naturalWidth,
+				naturalHeight: img.naturalHeight,
+			};
+		}
+		return output;
+	}
+
 	// Cleans up element by removing all its invisible children (which we don't want to render as Markdown)
 	function cleanUpElement(element) {
 		const childNodes = element.childNodes;
@@ -74,14 +89,16 @@
 	async function prepareCommandResponse(command) {
 		console.info('Got command: ' + command.name);
 
-		const clippedContentResponse = (title, html) => {
+		const clippedContentResponse = (title, html, imageSizes) => {
 			return {
 				name: 'clippedContent',
 				title: title,
 				html: html,
 				base_url: baseUrl(),
-				url: location.origin + location.pathname,
+				url: location.origin + location.pathname + location.search,
 				parent_id: command.parent_id,
+				tags: command.tags || '',
+				image_sizes: imageSizes,
 			};			
 		}
 
@@ -98,20 +115,20 @@
 				response.warning = 'Could not retrieve simplified version of page - full page has been saved instead.';
 				return response;
 			}
-			return clippedContentResponse(article.title, article.body);
+			return clippedContentResponse(article.title, article.body, getImageSizes(document));
 
 		} else if (command.name === "completePageHtml") {
 
 			const cleanDocument = document.body.cloneNode(true);
 			cleanUpElement(cleanDocument);
-			return clippedContentResponse(pageTitle(), cleanDocument.innerHTML);
+			return clippedContentResponse(pageTitle(), cleanDocument.innerHTML, getImageSizes(document));
 
 		} else if (command.name === "selectedHtml") {
 
 		    const range = window.getSelection().getRangeAt(0);
 		    const container = document.createElement('div');
 		    container.appendChild(range.cloneContents());
-		    return clippedContentResponse(pageTitle(), container.innerHTML);
+		    return clippedContentResponse(pageTitle(), container.innerHTML, getImageSizes(document));
 
 		} else if (command.name === 'screenshot') {
 
@@ -137,6 +154,7 @@
 			messageComp.style.maxWidth = messageCompWidth + 'px'
 			messageComp.style.border = '1px solid black'
 			messageComp.style.background = 'white'
+			messageComp.style.color = 'black';
 			messageComp.style.top = '10px'
 			messageComp.style.textAlign = 'center';
 			messageComp.style.padding = '10px'
@@ -214,6 +232,7 @@
 						crop_rect: selectionArea,
 						url: location.origin + location.pathname,
 						parent_id: command.parent_id,
+						tags: command.tags,
 					};
 
 					browser_.runtime.sendMessage({
@@ -229,6 +248,10 @@
 			overlay.addEventListener('mouseup', selection_mouseUp);
 
 			return {};
+
+		} else if (command.name === "pageUrl") {
+			let url = location.origin + location.pathname + location.search;
+			return clippedContentResponse(pageTitle(), url, getImageSizes(document));
 
 		} else {
 			throw new Error('Unknown command: ' + JSON.stringify(command));

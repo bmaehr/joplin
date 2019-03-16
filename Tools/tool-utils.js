@@ -68,6 +68,8 @@ toolUtils.unlinkForce = async function(filePath) {
 }
 
 toolUtils.fileExists = async function(filePath) {
+	const fs = require('fs-extra');
+	
 	return new Promise((resolve, reject) => {
 		fs.stat(filePath, function(err, stat) {
 			if (err == null) {
@@ -87,7 +89,12 @@ toolUtils.githubOauthToken = async function() {
 	return r.toString();
 }
 
-toolUtils.githubRelease = async function(project, tagName, isDraft) {
+toolUtils.githubRelease = async function(project, tagName, options = null) {
+	options = Object.assign({}, {
+		isDraft: false,
+		isPreRelease: false,
+	}, options);
+
 	const fetch = require('node-fetch');
 
 	const oauthToken = await toolUtils.githubOauthToken();
@@ -97,7 +104,8 @@ toolUtils.githubRelease = async function(project, tagName, isDraft) {
 		body: JSON.stringify({
 			tag_name: tagName,
 			name: tagName,
-			draft: isDraft,
+			draft: options.isDraft,
+			prerelease: options.isPreRelease,
 		}),
 		headers: {
 			'Content-Type': 'application/json',
@@ -113,6 +121,18 @@ toolUtils.githubRelease = async function(project, tagName, isDraft) {
 	if (!responseJson.url) throw new Error('No URL for release: ' + responseText);
 
 	return responseJson;
+}
+
+toolUtils.isLinux = () => {
+	return process && process.platform === 'linux';
+}
+
+toolUtils.isWindows = () => {
+	return process && process.platform === 'win32';
+}
+
+toolUtils.isMac = () => {
+	return process && process.platform === 'darwin';
 }
 
 module.exports = toolUtils;

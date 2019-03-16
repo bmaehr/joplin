@@ -4,6 +4,7 @@ const { _ } = require('lib/locale.js');
 const { OneDriveApiNodeUtils } = require('./onedrive-api-node-utils.js');
 const Setting = require('lib/models/Setting.js');
 const BaseItem = require('lib/models/BaseItem.js');
+const ResourceFetcher = require('lib/services/ResourceFetcher');
 const { Synchronizer } = require('lib/synchronizer.js');
 const { reg } = require('lib/registry.js');
 const { cliUtils } = require('./cli-utils.js');
@@ -116,7 +117,6 @@ class Command extends BaseCommand {
 		this.releaseLockFn_ = null;
 
 		// Lock is unique per profile/database
-		// TODO: use SQLite database to do lock?
 		const lockFilePath = require('os').tmpdir() + '/synclock_' + md5(escape(Setting.value('profileDir'))); // https://github.com/pvorb/node-md5/issues/41
 		if (!await fs.pathExists(lockFilePath)) await fs.writeFile(lockFilePath, 'synclock');
 
@@ -189,6 +189,15 @@ class Command extends BaseCommand {
 				} else {
 					throw error;
 				}
+			}
+
+			// When using the tool in command line mode, the ResourceFetcher service is
+			// not going to be running in the background, so the resources need to be
+			// explicitely downloaded below.
+			if (!app().hasGui()) {
+				this.stdout(_('Downloading resources...'));
+				await ResourceFetcher.instance().fetchAll();
+				await ResourceFetcher.instance().waitForAllFinished();
 			}
 
 			await app().refreshCurrentFolder();

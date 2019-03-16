@@ -5,6 +5,7 @@ const { SideBar } = require('./SideBar.min.js');
 const { NoteList } = require('./NoteList.min.js');
 const { NoteText } = require('./NoteText.min.js');
 const { PromptDialog } = require('./PromptDialog.min.js');
+const NotePropertiesDialog = require('./NotePropertiesDialog.min.js');
 const Setting = require('lib/models/Setting.js');
 const BaseModel = require('lib/BaseModel.js');
 const Tag = require('lib/models/Tag.js');
@@ -16,8 +17,29 @@ const { _ } = require('lib/locale.js');
 const layoutUtils = require('lib/layout-utils.js');
 const { bridge } = require('electron').remote.require('./bridge');
 const eventManager = require('../eventManager');
+const VerticalResizer = require('./VerticalResizer.min');
 
 class MainScreenComponent extends React.Component {
+
+	constructor() {
+		super();
+
+		this.notePropertiesDialog_close = this.notePropertiesDialog_close.bind(this);
+		this.sidebar_onDrag = this.sidebar_onDrag.bind(this);
+		this.noteList_onDrag = this.noteList_onDrag.bind(this);
+	}
+
+	sidebar_onDrag(event) {
+		Setting.setValue('style.sidebar.width', this.props.sidebarWidth + event.deltaX);
+	}
+
+	noteList_onDrag(event) {
+		Setting.setValue('style.noteList.width', Setting.value('style.noteList.width') + event.deltaX);
+	}
+
+	notePropertiesDialog_close() {
+		this.setState({ notePropertiesDialogOptions: {} });
+	}
 
 	componentWillMount() {
 		this.setState({
@@ -25,7 +47,8 @@ class MainScreenComponent extends React.Component {
 			modalLayer: {
 				visible: false,
 				message: '',
-			}
+			},
+			notePropertiesDialogOptions: {},
 		});
 	}
 
@@ -108,7 +131,7 @@ class MainScreenComponent extends React.Component {
 			});
 		} else if (command.name === 'setTags') {
 			const tags = await Tag.tagsByNoteId(command.noteId);
-			const tagTitles = tags.map((a) => { return a.title });
+			const tagTitles = tags.map((a) => { return a.title }).sort();
 
 			this.setState({
 				promptOptions: {
@@ -146,7 +169,7 @@ class MainScreenComponent extends React.Component {
 				},
 			});
 		} else if (command.name === 'renameTag') {
-			const tag = await Tag.load(command.id);			
+			const tag = await Tag.load(command.id);
 			if(!tag) return;
 
 			this.setState({
@@ -161,12 +184,12 @@ class MainScreenComponent extends React.Component {
 							} catch (error) {
 								bridge().showErrorMessageBox(error.message);
 							}
-						}						
+						}
 						this.setState({promptOptions: null });
 					}
 				}
 			})
-		
+
 		} else if (command.name === 'search') {
 
 			if (!this.searchId_) this.searchId_ = uuid.create();
@@ -187,8 +210,24 @@ class MainScreenComponent extends React.Component {
 					type: 'SEARCH_SELECT',
 					id: this.searchId_,
 				});
+			} else {
+				const note = await Note.load(this.props.selectedNoteId);
+				if (note) {
+					this.props.dispatch({
+						type: "FOLDER_AND_NOTE_SELECT",
+						folderId: note.parent_id,
+						noteId: note.id,
+					});
+				}
 			}
 
+		} else if (command.name === 'commandNoteProperties') {
+			this.setState({
+				notePropertiesDialogOptions: {
+					noteId: command.noteId,
+					visible: true,
+				},
+			});
 		} else if (command.name === 'toggleVisiblePanes') {
 			this.toggleVisiblePanes();
 		} else if (command.name === 'toggleSidebar') {
@@ -246,8 +285,8 @@ class MainScreenComponent extends React.Component {
 		}
 	}
 
-	styles(themeId, width, height, messageBoxVisible, isSidebarVisible) {
-		const styleKey = themeId + '_' + width + '_' + height + '_' + messageBoxVisible + '_' + (+isSidebarVisible);
+	styles(themeId, width, height, messageBoxVisible, isSidebarVisible, sidebarWidth, noteListWidth) {
+		const styleKey = [themeId, width, height, messageBoxVisible, (+isSidebarVisible), sidebarWidth, noteListWidth].join('_');
 		if (styleKey === this.styleKey_) return this.styles_;
 
 		const theme = themeStyle(themeId);
@@ -269,14 +308,20 @@ class MainScreenComponent extends React.Component {
 			backgroundColor: theme.warningBackgroundColor,
 		}
 
+		this.styles_.verticalResizer = {
+			width: 5,
+			height: height,
+			display: 'inline-block',
+		};
+
 		const rowHeight = height - theme.headerHeight - (messageBoxVisible ? this.styles_.messageBox.height : 0);
 
 		this.styles_.sideBar = {
-			width: Math.floor(layoutUtils.size(width * .2, 150, 300)),
+			width: sidebarWidth - this.styles_.verticalResizer.width,
 			height: rowHeight,
 			display: 'inline-block',
 			verticalAlign: 'top',
-    };
+   		};
 
 		if (isSidebarVisible === false) {
 			this.styles_.sideBar.width = 0;
@@ -284,14 +329,14 @@ class MainScreenComponent extends React.Component {
 		}
 
 		this.styles_.noteList = {
-			width: Math.floor(layoutUtils.size(width * .2, 150, 300)),
+			width: noteListWidth - this.styles_.verticalResizer.width,
 			height: rowHeight,
 			display: 'inline-block',
 			verticalAlign: 'top',
 		};
 
 		this.styles_.noteText = {
-			width: Math.floor(layoutUtils.size(width - this.styles_.sideBar.width - this.styles_.noteList.width, 0)),
+			width: Math.floor(width - this.styles_.sideBar.width - this.styles_.noteList.width - 10),
 			height: rowHeight,
 			display: 'inline-block',
 			verticalAlign: 'top',
@@ -317,14 +362,17 @@ class MainScreenComponent extends React.Component {
 	}
 
 	render() {
-		const style = this.props.style;
+		const theme = themeStyle(this.props.theme);
+		const style = Object.assign({
+			color: theme.color,
+			backgroundColor: theme.backgroundColor,
+		}, this.props.style);
 		const promptOptions = this.state.promptOptions;
 		const folders = this.props.folders;
 		const notes = this.props.notes;
 		const messageBoxVisible = this.props.hasDisabledSyncItems || this.props.showMissingMasterKeyMessage;
 		const sidebarVisibility = this.props.sidebarVisibility;
-		const styles = this.styles(this.props.theme, style.width, style.height, messageBoxVisible, sidebarVisibility);
-		const theme = themeStyle(this.props.theme);
+		const styles = this.styles(this.props.theme, style.width, style.height, messageBoxVisible, sidebarVisibility, this.props.sidebarWidth, this.props.noteListWidth);
 		const selectedFolderId = this.props.selectedFolderId;
 		const onConflictFolder = this.props.selectedFolderId === Folder.conflictFolderId();
 
@@ -353,7 +401,7 @@ class MainScreenComponent extends React.Component {
 
 		headerItems.push({
 			title: _('New notebook'),
-			iconName: 'fa-folder-o',
+			iconName: 'fa-book',
 			onClick: () => { this.doCommand({ name: 'newNotebook' }) },
 		});
 
@@ -412,9 +460,17 @@ class MainScreenComponent extends React.Component {
 
 		const modalLayerStyle = Object.assign({}, styles.modalLayer, { display: this.state.modalLayer.visible ? 'block' : 'none' });
 
+		const notePropertiesDialogOptions = this.state.notePropertiesDialogOptions;
+
 		return (
 			<div style={style}>
 				<div style={modalLayerStyle}>{this.state.modalLayer.message}</div>
+
+				{ notePropertiesDialogOptions.visible && <NotePropertiesDialog
+					theme={this.props.theme}
+					noteId={notePropertiesDialogOptions.noteId}
+					onClose={this.notePropertiesDialog_close}
+				/> }
 
 				<PromptDialog
 					autocomplete={promptOptions && ('autocomplete' in promptOptions) ? promptOptions.autocomplete : null}
@@ -427,10 +483,13 @@ class MainScreenComponent extends React.Component {
 					visible={!!this.state.promptOptions}
 					buttons={promptOptions && ('buttons' in promptOptions) ? promptOptions.buttons : null}
 					inputType={promptOptions && ('inputType' in promptOptions) ? promptOptions.inputType : null} />
+
 				<Header style={styles.header} showBackButton={false} items={headerItems} />
 				{messageComp}
 				<SideBar style={styles.sideBar} />
+				<VerticalResizer style={styles.verticalResizer} onDrag={this.sidebar_onDrag}/>
 				<NoteList style={styles.noteList} />
+				<VerticalResizer style={styles.verticalResizer} onDrag={this.noteList_onDrag}/>
 				<NoteText style={styles.noteText} visiblePanes={this.props.noteVisiblePanes} />
 			</div>
 		);
@@ -450,6 +509,9 @@ const mapStateToProps = (state) => {
 		showMissingMasterKeyMessage: state.notLoadedMasterKeys.length && state.masterKeys.length,
 		selectedFolderId: state.selectedFolderId,
 		sidebarVisibility: state.sidebarVisibility,
+		sidebarWidth: state.settings['style.sidebar.width'],
+		noteListWidth: state.settings['style.noteList.width'],
+		selectedNoteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null,
 	};
 };
 

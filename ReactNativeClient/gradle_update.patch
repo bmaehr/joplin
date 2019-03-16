@@ -1,4 +1,59 @@
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-document-picker/android/build.gradle node_modules/react-native-document-picker/android/build.gradle
+--- node_modules/react-native-camera/android/build.gradle.orig  2019-03-16 19:40:34.702306600 +0100
++++ node_modules/react-native-camera/android/build.gradle       2019-03-16 19:58:04.482136400 +0100
+@@ -8,19 +8,19 @@
+   }
+
+   dependencies {
+-    classpath 'com.android.tools.build:gradle:3.0.1'
++    classpath 'com.android.tools.build:gradle:3.4.0-rc02'
+   }
+ }
+
+ apply plugin: 'com.android.library'
+
+ android {
+-  compileSdkVersion safeExtGet('compileSdkVersion', 26)
+-  buildToolsVersion safeExtGet('buildToolsVersion', '26.0.2')
++  compileSdkVersion 28
++  buildToolsVersion '28.0.2'
+
+   defaultConfig {
+-    minSdkVersion safeExtGet('minSdkVersion', 16)
+-    targetSdkVersion safeExtGet('targetSdkVersion', 26)
++    minSdkVersion 16
++    targetSdkVersion 28
+   }
+
+   flavorDimensions "react-native-camera"
+@@ -66,16 +66,15 @@
+ }
+
+ dependencies {
+-  def googlePlayServicesVisionVersion = safeExtGet('googlePlayServicesVisionVersion', safeExtGet('googlePlayServicesVersion', '17.0.2'))
+-
+-  compileOnly 'com.facebook.react:react-native:+'
++  implementation 'com.facebook.react:react-native:0.59.1'
++
+   compileOnly 'com.facebook.infer.annotation:infer-annotation:+'
+-  implementation "com.google.zxing:core:3.3.0"
+-  implementation "com.drewnoakes:metadata-extractor:2.9.1"
+-  generalImplementation "com.google.android.gms:play-services-vision:$googlePlayServicesVisionVersion"
+-  implementation "com.android.support:exifinterface:${safeExtGet('supportLibVersion', '27.1.0')}"
+-  implementation "com.android.support:support-annotations:${safeExtGet('supportLibVersion', '27.1.0')}"
+-  implementation "com.android.support:support-v4:${safeExtGet('supportLibVersion', '27.1.0')}"
+-  mlkitImplementation "com.google.firebase:firebase-ml-vision:${safeExtGet('firebase-ml-vision', '18.0.2')}"
+-  mlkitImplementation "com.google.firebase:firebase-ml-vision-face-model:${safeExtGet('firebase-ml-vision-face-model', '17.0.2')}"
++  implementation 'com.google.zxing:core:3.3.0'
++  implementation 'com.drewnoakes:metadata-extractor:2.9.1'
++  generalImplementation 'com.google.android.gms:play-services-vision:17.0.2'
++  implementation 'com.android.support:exifinterface:28.0.0'
++  implementation 'com.android.support:support-annotations:28.0.0'
++  implementation 'com.android.support:support-v4:28.0.0'
++  mlkitImplementation 'com.google.firebase:firebase-ml-vision:19.0.2'
++  mlkitImplementation 'com.google.firebase:firebase-ml-vision-face-model:17.0.2'
+ }
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-document-picker/android/build.gradle node_modules/react-native-document-picker/android/build.gradle
 --- node_modules.orig/react-native-document-picker/android/build.gradle	2017-04-25 04:04:44.000000000 +0200
 +++ node_modules/react-native-document-picker/android/build.gradle	2018-09-15 02:02:30.943390900 +0200
 @@ -4,23 +4,19 @@
@@ -6,7 +61,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      }
      dependencies {
 -        classpath 'com.android.tools.build:gradle:3.1.4'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
@@ -30,23 +85,12 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      }
 
      buildTypes {
-@@ -31,16 +27,6 @@
-     }
+@@ -32,5 +28,5 @@
  }
 
--allprojects {
--    repositories {
--        mavenLocal()
--        jcenter()
--        maven {
--            url "http://files.couchbase.com/maven2/"
--        }
--    }
--}
--
  dependencies {
--    implementation "com.facebook.react:react-native:${safeExtGet('reactNativeVersion', '+')}"
-+    implementation 'com.facebook.react:react-native:0.57.8'
+-    implementation 'com.facebook.react:react-native:0.59.1'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-fetch-blob/android/build.gradle node_modules/react-native-fetch-blob/android/build.gradle
 --- node_modules.orig/react-native-fetch-blob/android/build.gradle	2017-08-03 03:35:14.000000000 +0200
@@ -65,7 +109,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      }
      dependencies {
 -        classpath 'com.android.tools.build:gradle:2.2.3'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
@@ -95,7 +139,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
  dependencies {
 -    compile 'com.facebook.react:react-native:+'
 -    //{RNFetchBlob_PRE_0.28_DEPDENDENCY}
-+    implementation 'com.facebook.react:react-native:0.57.8'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-file-viewer/android/build.gradle node_modules/react-native-file-viewer/android/build.gradle
 --- node_modules.orig/react-native-file-viewer/android/build.gradle	2017-10-02 18:26:25.000000000 +0200
@@ -132,8 +176,8 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -}
 -
  dependencies {
--    compile 'com.facebook.react:react-native:+'
-+    implementation 'com.facebook.react:react-native:0.57.8'
+-    implementation 'com.facebook.react:react-native:+'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
 
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-fs/android/build.gradle node_modules/react-native-fs/android/build.gradle
@@ -152,7 +196,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 
      dependencies {
 -        classpath 'com.android.tools.build:gradle:1.5.0'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
@@ -180,25 +224,38 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 
  dependencies {
 -    implementation 'com.facebook.react:react-native:+'
-+    implementation 'com.facebook.react:react-native:0.57.8'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-image-picker/android/build.gradle node_modules/react-native-image-picker/android/build.gradle
 --- node_modules.orig/react-native-image-picker/android/build.gradle	2018-05-12 20:21:31.000000000 +0200
 +++ node_modules/react-native-image-picker/android/build.gradle	2018-09-15 02:02:30.883579100 +0200
-@@ -14,23 +14,19 @@
+@@ -1,12 +1,5 @@
+ import groovy.json.JsonSlurper
+
+-def computeVersionName() {
+-    // dynamically retrieve version from package.json
+-    def slurper = new JsonSlurper()
+-    def json = slurper.parse(file('../package.json'), "utf-8")
+-    return json.version
+-}
+-
+ buildscript {
+     repositories {
+         google()
+@@ -14,25 +7,21 @@
      }
 
      dependencies {
--        classpath 'com.android.tools.build:gradle:2.2.3'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
+-        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
  apply plugin: 'com.android.library'
 
--def DEFAULT_COMPILE_SDK_VERSION = 25
--def DEFAULT_BUILD_TOOLS_VERSION = "25.0.2"
--def DEFAULT_TARGET_SDK_VERSION = 25
+-def DEFAULT_COMPILE_SDK_VERSION = 27
+-def DEFAULT_BUILD_TOOLS_VERSION = "27.0.3"
+-def DEFAULT_TARGET_SDK_VERSION = 26
 -
  android {
 -    compileSdkVersion rootProject.hasProperty('compileSdkVersion') ? rootProject.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
@@ -211,80 +268,50 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -        targetSdkVersion rootProject.hasProperty('targetSdkVersion') ? rootProject.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
 +        targetSdkVersion 28
          versionCode 1
-         versionName computeVersionName()
+-        versionName computeVersionName()
++        versionName '1.0'
      }
-@@ -51,15 +47,15 @@
+     lintOptions {
+         abortOnError false
+@@ -51,7 +40,7 @@
  }
 
  dependencies {
--    compile "com.facebook.react:react-native:+"  // From node_modules
-+    implementation "com.facebook.react:react-native:0.57.8"  // From node_modules
+-    implementation "com.facebook.react:react-native:+"  // From node_modules
++    implementation 'com.facebook.react:react-native:0.59.1'
 
--    testCompile "junit:junit:4.10"
--    testCompile "org.assertj:assertj-core:1.7.0"
--    testCompile "org.robolectric:robolectric:3.3.2"
--
--    testCompile "org.easytesting:fest-assert-core:${FEST_ASSERT_CORE_VERSION}"
--    testCompile "org.powermock:powermock-api-mockito:${POWERMOCK_VERSION}"
--    testCompile "org.powermock:powermock-module-junit4-rule:${POWERMOCK_VERSION}"
--    testCompile "org.powermock:powermock-classloading-xstream:${POWERMOCK_VERSION}"
--    testCompile "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
-+    testImplementation "junit:junit:4.12"
-+    testImplementation "org.assertj:assertj-core:2.6.0"
-+    testImplementation "org.robolectric:robolectric:3.3.2"
-+
-+    testImplementation "org.easytesting:fest-assert-core:${FEST_ASSERT_CORE_VERSION}"
-+    testImplementation "org.powermock:powermock-api-mockito:${POWERMOCK_VERSION}"
-+    testImplementation "org.powermock:powermock-module-junit4-rule:${POWERMOCK_VERSION}"
-+    testImplementation "org.powermock:powermock-classloading-xstream:${POWERMOCK_VERSION}"
-+    testImplementation "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
- }
+     testImplementation "junit:junit:4.10"
+     testImplementation "org.assertj:assertj-core:1.7.0"
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-image-resizer/android/build.gradle node_modules/react-native-image-resizer/android/build.gradle
 --- node_modules.orig/react-native-image-resizer/android/build.gradle	2017-05-08 16:36:22.000000000 +0200
 +++ node_modules/react-native-image-resizer/android/build.gradle	2018-09-15 02:25:53.610070000 +0200
-@@ -1,25 +1,26 @@
- buildscript {
-     repositories {
-         jcenter()
-+        google()
-     }
-
-
-     dependencies {
--        classpath 'com.android.tools.build:gradle:2.2.3'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
-     }
- }
-
+@@ -1,21 +1,17 @@
  apply plugin: 'com.android.library'
 
+-def safeExtGet(prop, fallback) {
+-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+-}
+-
  android {
--    compileSdkVersion 23
--    buildToolsVersion "23.0.1"
+-    compileSdkVersion safeExtGet('compileSdkVersion', 26)
+-    buildToolsVersion safeExtGet('buildToolsVersion', "26.0.3")
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
 
      defaultConfig {
-         minSdkVersion 16
--        targetSdkVersion 23
+-        minSdkVersion safeExtGet('minSdkVersion', 16)
+-        targetSdkVersion safeExtGet('targetSdkVersion', 26)
++        minSdkVersion 16
 +        targetSdkVersion 28
          versionCode 1
 -        versionName "1.0"
 +        versionName '1.0'
      }
-     buildTypes {
-         release {
-@@ -28,10 +29,6 @@
-     }
  }
 
--repositories {
--    mavenCentral()
--}
--
  dependencies {
--    compile 'com.facebook.react:react-native:+'
-+    implementation 'com.facebook.react:react-native:0.57.8'
+-    compileOnly "com.facebook.react:react-native:${safeExtGet('reactNativeVersion', '+')}"
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-push-notification/android/build.gradle node_modules/react-native-push-notification/android/build.gradle
 --- node_modules.orig/react-native-push-notification/android/build.gradle	2017-12-02 21:02:06.000000000 +0100
@@ -303,7 +330,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -allprojects {
 -    repositories {
 -        jcenter()
-+        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
@@ -349,10 +376,10 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compile "com.google.firebase:firebase-messaging:$firebaseVersion"
 +    implementation fileTree(dir: 'libs', include: ['*.jar'])
 +    testImplementation 'junit:junit:4.12'
-+    implementation 'com.facebook.react:react-native:0.57.8'
-+    implementation 'com.google.android.gms:play-services-gcm:15.0.1'
++    implementation 'com.facebook.react:react-native:0.59.1'
++    implementation 'com.google.android.gms:play-services-gcm:16.1.0'
 +    implementation 'me.leolin:ShortcutBadger:1.1.22@aar'
-+    implementation 'com.google.firebase:firebase-messaging:17.3.4'
++    implementation 'com.google.firebase:firebase-messaging:17.4.0'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-securerandom/android/build.gradle node_modules/react-native-securerandom/android/build.gradle
 --- node_modules.orig/react-native-securerandom/android/build.gradle	2017-10-11 19:39:28.000000000 +0200
@@ -366,7 +393,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 
      dependencies {
 -        classpath 'com.android.tools.build:gradle:1.3.1'
-+        classpath 'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
@@ -397,7 +424,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -
  dependencies {
 -    compile 'com.facebook.react:react-native:+'
-+    implementation 'com.facebook.react:react-native:0.57.8'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-share-extension/android/build.gradle node_modules/react-native-share-extension/android/build.gradle
 --- node_modules.orig/react-native-share-extension/android/build.gradle	2016-06-10 20:52:50.000000000 +0200
@@ -411,7 +438,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 
    dependencies {
 -    classpath 'com.android.tools.build:gradle:1.1.3'
-+    classpath 'com.android.tools.build:gradle:3.1.4'
++    classpath 'com.android.tools.build:gradle:3.4.0-rc02'
    }
  }
 
@@ -442,17 +469,17 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -
  dependencies {
 -  compile "com.facebook.react:react-native:+"
-+  implementation 'com.facebook.react:react-native:0.57.8'
++  implementation 'com.facebook.react:react-native:0.59.1'
  }
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-sqlite-storage/src/android/build.gradle node_modules/react-native-sqlite-storage/src/android/build.gradle
 --- node_modules.orig/react-native-sqlite-storage/src/android/build.gradle	2018-05-28 14:28:26.000000000 +0200
 +++ node_modules/react-native-sqlite-storage/src/android/build.gradle	2018-09-15 02:25:54.114229400 +0200
-@@ -5,35 +5,27 @@
+@@ -5,25 +5,21 @@
      }
 
      dependencies {
 -        classpath 'com.android.tools.build:gradle:3.1.4'
-+        classpath  'com.android.tools.build:gradle:3.1.4'
++        classpath 'com.android.tools.build:gradle:3.4.0-rc02'
      }
  }
 
@@ -464,7 +491,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -
  android {
 -    compileSdkVersion safeExtGet('compileSdkVersion', 23)
--    buildToolsVersion safeExtGet('buildToolsVersion', '23.0.1')
+-    buildToolsVersion safeExtGet('buildToolsVersion', '27.0.3')
 +    compileSdkVersion 28
 +    buildToolsVersion '28.0.2'
 
@@ -479,31 +506,22 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      }
      lintOptions {
          abortOnError false
-     }
+@@ -35,5 +31,5 @@
  }
 
--repositories {
--    mavenCentral()
--}
--
  dependencies {
--    compile 'com.facebook.react:react-native:0.14.+'
-+    implementation 'com.facebook.react:react-native:0.57.8'
+-    implementation 'com.facebook.react:react-native:+'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }
-
 diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-vector-icons/android/build.gradle node_modules/react-native-vector-icons/android/build.gradle
 --- node_modules.orig/react-native-vector-icons/android/build.gradle	2018-07-28 10:26:36.000000000 +0200
 +++ node_modules/react-native-vector-icons/android/build.gradle	2018-09-15 02:25:54.050400000 +0200
-@@ -1,40 +1,31 @@
- buildscript {
-   repositories {
-     jcenter()
-     google()
+@@ -5,26 +5,21 @@
    }
 
    dependencies {
 -    classpath 'com.android.tools.build:gradle:3.1.4'
-+    classpath 'com.android.tools.build:gradle:3.1.4'
++    classpath 'com.android.tools.build:gradle:3.4.0-rc02'
    }
  }
 
@@ -531,14 +549,44 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
    }
    lintOptions {
      abortOnError false
-   }
+@@ -36,5 +31,5 @@
  }
 
--repositories {
--  mavenCentral()
--}
--
  dependencies {
 -  implementation "com.facebook.react:react-native:${safeExtGet('reactNativeVersion', '+')}"
-+  implementation 'com.facebook.react:react-native:0.57.8'
++  implementation 'com.facebook.react:react-native:0.59.1'
+ }
+diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.png' -x '*.class' -x '*.prefs' -x '*.flat' -x merge-state -x '*.jar' -x .classpath -x .project -x '*.iml' -x '*.so' -x '*.aidl' -x '*.aar' -x '*.store' -x '*.zip' -x '*.ap_' node_modules.orig/react-native-vector-icons/android/build.gradle node_modules/react-native-vector-icons/android/build.gradle
+--- node_modules.orig/react-native-version-info/android/build.gradle    2019-03-16 19:40:51.746887100 +0100
++++ node_modules/react-native-version-info/android/build.gradle 2019-03-16 19:42:17.745033600 +0100
+@@ -1,18 +1,14 @@
+-def safeExtGet(prop, fallback) {
+-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+-}
+-
+ apply plugin: 'com.android.library'
+
+ android {
+-    compileSdkVersion safeExtGet('compileSdkVersion', 27)
+-    buildToolsVersion safeExtGet('buildToolsVersion', '27.0.3')
++    compileSdkVersion 28
++    buildToolsVersion '28.0.2'
+
+     defaultConfig {
+-        minSdkVersion safeExtGet('minSdkVersion', 16)
+-        targetSdkVersion safeExtGet('targetSdkVersion', 27)
++        minSdkVersion 16
++        targetSdkVersion 28
+         versionCode 1
+-        versionName "1.0"
++        versionName '1.0'
+         ndk {
+             abiFilters "armeabi-v7a", "x86"
+         }
+@@ -23,5 +19,5 @@
+ }
+
+ dependencies {
+-    implementation 'com.facebook.react:react-native:+'
++    implementation 'com.facebook.react:react-native:0.59.1'
  }

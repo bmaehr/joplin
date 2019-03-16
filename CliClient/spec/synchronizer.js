@@ -7,6 +7,7 @@ const fs = require('fs-extra');
 const Folder = require('lib/models/Folder.js');
 const Note = require('lib/models/Note.js');
 const Resource = require('lib/models/Resource.js');
+const ResourceFetcher = require('lib/services/ResourceFetcher');
 const Tag = require('lib/models/Tag.js');
 const { Database } = require('lib/database.js');
 const Setting = require('lib/models/Setting.js');
@@ -14,6 +15,7 @@ const MasterKey = require('lib/models/MasterKey');
 const BaseItem = require('lib/models/BaseItem.js');
 const BaseModel = require('lib/BaseModel.js');
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
+const WelcomeUtils = require('lib/WelcomeUtils');
 
 process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
@@ -872,10 +874,47 @@ describe('Synchronizer', function() {
 		let allResources = await Resource.all();
 		expect(allResources.length).toBe(1);
 		let resource1_2 = allResources[0];
-		let resourcePath1_2 = Resource.fullPath(resource1_2);
-
+		let ls = await Resource.localState(resource1_2);
 		expect(resource1_2.id).toBe(resource1.id);
+		expect(ls.fetch_status).toBe(Resource.FETCH_STATUS_IDLE);
+
+		const fetcher = new ResourceFetcher(() => { return synchronizer().api() });
+		fetcher.queueDownload(resource1_2.id);
+		await fetcher.waitForAllFinished();
+
+		resource1_2 = await Resource.load(resource1.id);
+		ls = await Resource.localState(resource1_2);
+		expect(ls.fetch_status).toBe(Resource.FETCH_STATUS_DONE);
+
+		let resourcePath1_2 = Resource.fullPath(resource1_2);
 		expect(fileContentEqual(resourcePath1, resourcePath1_2)).toBe(true);
+	}));
+
+	it('should handle resource download errors', asyncTest(async () => {
+		while (insideBeforeEach) await time.msleep(500);
+
+		let folder1 = await Folder.save({ title: "folder1" });
+		let note1 = await Note.save({ title: 'ma note', parent_id: folder1.id });
+		await shim.attachFileToNote(note1, __dirname + '/../tests/support/photo.jpg');
+		let resource1 = (await Resource.all())[0];
+		let resourcePath1 = Resource.fullPath(resource1);
+		await synchronizer().start();
+
+		await switchClient(2);
+
+		await synchronizer().start();
+
+		const fetcher = new ResourceFetcher(() => { return {
+			// Simulate a failed download
+			get: () => { return new Promise((resolve, reject) => { reject(new Error('did not work')) }); }
+		} });
+		fetcher.queueDownload(resource1.id);
+		await fetcher.waitForAllFinished();
+
+		resource1 = await Resource.load(resource1.id);
+		let ls = await Resource.localState(resource1);
+		expect(ls.fetch_status).toBe(Resource.FETCH_STATUS_ERROR);
+		expect(ls.fetch_error).toBe('did not work');
 	}));
 
 	it('should delete resources', asyncTest(async () => {
@@ -926,6 +965,10 @@ describe('Synchronizer', function() {
 		Setting.setObjectKey('encryption.passwordCache', masterKey.id, '123456');
 		await encryptionService().loadMasterKeysFromSettings();
 
+		const fetcher = new ResourceFetcher(() => { return synchronizer().api() });
+		fetcher.queueDownload(resource1.id);
+		await fetcher.waitForAllFinished();
+		
 		let resource1_2 = (await Resource.all())[0];
 		resource1_2 = await Resource.decrypt(resource1_2);
 		let resourcePath1_2 = Resource.fullPath(resource1_2);
@@ -1055,6 +1098,48 @@ describe('Synchronizer', function() {
 		await synchronizer().start();
 		let note2 = await Note.load(note.id);
 		expect(note2.title).toBe("un UPDATE");
+	}));
+
+	it("should create a new Welcome notebook on each client", asyncTest(async () => {
+		// Create the Welcome items on two separate clients
+
+		await WelcomeUtils.createWelcomeItems();
+		await synchronizer().start();
+
+		await switchClient(2);
+
+		await WelcomeUtils.createWelcomeItems();
+		const beforeFolderCount = (await Folder.all()).length;
+		const beforeNoteCount = (await Note.all()).length;
+		expect(beforeFolderCount === 1).toBe(true);
+		expect(beforeNoteCount > 1).toBe(true);
+		
+		await synchronizer().start();
+
+		const afterFolderCount = (await Folder.all()).length;
+		const afterNoteCount = (await Note.all()).length;
+
+		expect(afterFolderCount).toBe(beforeFolderCount * 2);
+		expect(afterNoteCount).toBe(beforeNoteCount * 2);
+
+		// Changes to the Welcome items should be synced to all clients
+
+		const f1 = (await Folder.all())[0];
+		await Folder.save({ id: f1.id, title: 'Welcome MOD' });
+
+		await synchronizer().start();
+
+		await switchClient(1);
+
+		await synchronizer().start();
+
+		const f1_1 = await Folder.load(f1.id);
+		expect(f1_1.title).toBe('Welcome MOD');
+
+		// Now check that it created the duplicate tag
+
+		const tags = await Tag.modelSelectAll('SELECT * FROM tags WHERE title = "organising"');
+		expect(tags.length).toBe(2);
 	}));
 
 });

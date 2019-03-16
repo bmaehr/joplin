@@ -2,6 +2,7 @@ const BaseItem = require('lib/models/BaseItem.js');
 const Folder = require('lib/models/Folder.js');
 const Note = require('lib/models/Note.js');
 const Resource = require('lib/models/Resource.js');
+const ResourceLocalState = require('lib/models/ResourceLocalState.js');
 const MasterKey = require('lib/models/MasterKey.js');
 const BaseModel = require('lib/BaseModel.js');
 const DecryptionWorker = require('lib/services/DecryptionWorker');
@@ -11,6 +12,7 @@ const { Logger } = require('lib/logger.js');
 const { _ } = require('lib/locale.js');
 const { shim } = require('lib/shim.js');
 const JoplinError = require('lib/JoplinError');
+const BaseSyncTarget = require('lib/BaseSyncTarget');
 
 class Synchronizer {
 
@@ -19,7 +21,7 @@ class Synchronizer {
 		this.db_ = db;
 		this.api_ = api;
 		this.syncDirName_ = '.sync';
-		this.resourceDirName_ = '.resource';
+		this.resourceDirName_ = BaseSyncTarget.resourceDirName();
 		this.logger_ = new Logger();
 		this.appType_ = appType;
 		this.cancelling_ = false;
@@ -72,7 +74,7 @@ class Synchronizer {
 		if (report.deleteLocal) lines.push(_("Deleted local items: %d.", report.deleteLocal));
 		if (report.deleteRemote) lines.push(_("Deleted remote items: %d.", report.deleteRemote));
 		if (report.fetchingTotal && report.fetchingProcessed) lines.push(_("Fetched items: %d/%d.", report.fetchingProcessed, report.fetchingTotal));
-		if (!report.completedTime && report.state) lines.push(_('State: %s.', Synchronizer.stateToLabel(report.state)));
+		// if (!report.completedTime && report.state) lines.push(_('State: %s.', Synchronizer.stateToLabel(report.state)));
 		if (report.cancelling && !report.completedTime) lines.push(_("Cancelling..."));
 		if (report.completedTime) lines.push(_("Completed: %s", time.formatMsToLocal(report.completedTime)));
 		if (report.errors && report.errors.length) lines.push(_("Last error: %s", report.errors[report.errors.length - 1].toString().substr(0, 500)));
@@ -231,9 +233,13 @@ class Synchronizer {
 						let path = BaseItem.systemPath(local);
 
 						// Safety check to avoid infinite loops.
-						// In fact this error is possible if the item is marked for sync (via sync_time or force_sync) while synchronisation is in
-						// progress. In that case exit anyway to be sure we aren't in a loop and the item will be re-synced next time.
-						if (donePaths.indexOf(path) > 0) throw new Error(sprintf("Processing a path that has already been done: %s. sync_time was not updated?", path));
+						// - In fact this error is possible if the item is marked for sync (via sync_time or force_sync) while synchronisation is in
+						//   progress. In that case exit anyway to be sure we aren't in a loop and the item will be re-synced next time.
+						// - It can also happen if the item is directly modified in the sync target, and set with an update_time in the future. In that case,
+						//   the local sync_time will be updated to Date.now() but on the next loop it will see that the remote item still has a date ahead
+						//   and will see a conflict. There's currently no automatic fix for this - the remote item on the sync target must be fixed manually
+						//   (by setting an updated_time less than current time).
+						if (donePaths.indexOf(path) >= 0) throw new Error(sprintf("Processing a path that has already been done: %s. sync_time was not updated? Remote item has an updated_time in the future?", path));
 
 						let remote = await this.api().stat(path);
 						let action = null;
@@ -247,7 +253,7 @@ class Synchronizer {
 								reason = "remote does not exist, and local is new and has never been synced";
 							} else {
 								// Note or item was modified after having been deleted remotely
-								// "itemConflict" if for all the items except the notes, which are dealt with in a special way
+								// "itemConflict" is for all the items except the notes, which are dealt with in a special way
 								action = local.type_ == BaseModel.TYPE_NOTE ? "noteConflict" : "itemConflict";
 								reason = "remote has been deleted, but local has changes";
 							}
@@ -261,7 +267,7 @@ class Synchronizer {
 							// This is a bit inefficient because if the resulting action is "updateRemote" we don't need the whole
 							// content, but for now that will do since being reliable is the priority.
 							//
-							// TODO: assuming a particular sync target is guaranteed to have accurate timestamps, the driver maybe
+							// Note: assuming a particular sync target is guaranteed to have accurate timestamps, the driver maybe
 							// could expose this with a accurateTimestamps() method that returns "true". In that case, the test
 							// could be done using the file timestamp and the potentially unnecessary content loading could be skipped.
 							// OneDrive does not appear to have accurate timestamps as lastModifiedDateTime would occasionally be
@@ -439,7 +445,7 @@ class Synchronizer {
 			// 3. DELTA
 			// ------------------------------------------------------------------------
 			// Loop through all the remote items, find those that
-			// have been updated, and apply the changes to local.
+			// have been created or updated, and apply the changes to local.
 			// ------------------------------------------------------------------------
 
 			if (syncSteps.indexOf("delta") >= 0) {
@@ -478,7 +484,7 @@ class Synchronizer {
 							break;
 						}
 
-						this.logSyncOperation("fetchingProcessed", null, null, "Processing fetched item");
+						// this.logSyncOperation("fetchingProcessed", null, null, "Processing fetched item");
 
 						let remote = remotes[i];
 						if (!BaseItem.isSystemPath(remote.path)) continue; // The delta API might return things like the .sync, .resource or the root folder
@@ -524,6 +530,7 @@ class Synchronizer {
 								this.logger().warn('Rejected by target: ' + path + ': ' + error.message);
 								action = null;
 							} else {
+								error.message = 'On file ' + path + ': ' + error.message;
 								throw error;
 							}
 						}
@@ -554,23 +561,33 @@ class Synchronizer {
 							if (action == "createLocal") options.isNew = true;
 							if (action == "updateLocal") options.oldItem = local;
 
-							if (content.type_ == BaseModel.TYPE_RESOURCE && action == "createLocal") {
-								let localResourceContentPath = Resource.fullPath(content);
-								let remoteResourceContentPath = this.resourceDirName_ + "/" + content.id;
-								try {
-									await this.api().get(remoteResourceContentPath, { path: localResourceContentPath, target: "file" });
-								} catch (error) {
-									if (error.code === 'rejectedByTarget') {
-										this.progressReport_.errors.push(error);
-										this.logger().warn('Rejected by target: ' + path + ': ' + error.message);
-										continue;
-									} else {
-										throw error;
-									}
-								}
+							const creatingNewResource = content.type_ == BaseModel.TYPE_RESOURCE && action == "createLocal";
+
+							// if (content.type_ == BaseModel.TYPE_RESOURCE && action == "createLocal") {
+							// 	let localResourceContentPath = Resource.fullPath(content);
+							// 	let remoteResourceContentPath = this.resourceDirName_ + "/" + content.id;
+							// 	try {
+							// 		await this.api().get(remoteResourceContentPath, { path: localResourceContentPath, target: "file" });
+							// 	} catch (error) {
+							// 		if (error.code === 'rejectedByTarget') {
+							// 			this.progressReport_.errors.push(error);
+							// 			this.logger().warn('Rejected by target: ' + path + ': ' + error.message);
+							// 			continue;
+							// 		} else {
+							// 			throw error;
+							// 		}
+							// 	}
+							// }
+
+							// if (creatingNewResource) content.fetch_status = Resource.FETCH_STATUS_IDLE;
+
+							if (creatingNewResource) {
+								await ResourceLocalState.save({ resource_id: content.id, fetch_status: Resource.FETCH_STATUS_IDLE });
 							}
 
 							await ItemClass.save(content, options);
+
+							if (creatingNewResource) this.dispatch({ type: "SYNC_CREATED_RESOURCE", id: content.id });
 
 							if (!hasAutoEnabledEncryption && content.type_ === BaseModel.TYPE_MASTER_KEY && !masterKeysBefore) {
 								hasAutoEnabledEncryption = true;

@@ -1,5 +1,5 @@
 const React = require('react'); const Component = React.Component;
-const { AppState, Keyboard, NativeModules, BackHandler } = require('react-native');
+const { AppState, Keyboard, NativeModules, BackHandler, Platform } = require('react-native');
 const { SafeAreaView } = require('react-navigation');
 const { connect, Provider } = require('react-redux');
 const { BackButtonService } = require('lib/services/back-button.js');
@@ -28,6 +28,7 @@ const ResourceService = require('lib/services/ResourceService');
 const { JoplinDatabase } = require('lib/joplin-database.js');
 const { Database } = require('lib/database.js');
 const { NotesScreen } = require('lib/components/screens/notes.js');
+const { TagsScreen } = require('lib/components/screens/tags.js');
 const { NoteScreen } = require('lib/components/screens/note.js');
 const { ConfigScreen } = require('lib/components/screens/config.js');
 const { FolderScreen } = require('lib/components/screens/folder.js');
@@ -45,12 +46,16 @@ const { SideMenuContent } = require('lib/components/side-menu-content.js');
 const { DatabaseDriverReactNative } = require('lib/database-driver-react-native');
 const { reg } = require('lib/registry.js');
 const { _, setLocale, closestSupportedLocale, defaultLocale } = require('lib/locale.js');
-const RNFetchBlob = require('react-native-fetch-blob').default;
+const RNFetchBlob = require('rn-fetch-blob').default;
 const { PoorManIntervals } = require('lib/poor-man-intervals.js');
 const { reducer, defaultState } = require('lib/reducer.js');
 const { FileApiDriverLocal } = require('lib/file-api-driver-local.js');
 const DropdownAlert = require('react-native-dropdownalert').default;
 const ShareExtension = require('react-native-share-extension').default;
+const ResourceFetcher = require('lib/services/ResourceFetcher');
+const SearchEngine = require('lib/services/SearchEngine');
+const WelcomeUtils = require('lib/WelcomeUtils');
+const { themeStyle } = require('lib/components/global-style.js');
 
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
 const SyncTargetOneDrive = require('lib/SyncTargetOneDrive.js');
@@ -64,8 +69,6 @@ SyncTargetRegistry.addClass(SyncTargetOneDriveDev);
 SyncTargetRegistry.addClass(SyncTargetNextcloud);
 SyncTargetRegistry.addClass(SyncTargetWebDAV);
 SyncTargetRegistry.addClass(SyncTargetDropbox);
-
-// Disabled because not fully working
 SyncTargetRegistry.addClass(SyncTargetFilesystem);
 
 const FsDriverRN = require('lib/fs-driver-rn.js').FsDriverRN;
@@ -90,12 +93,13 @@ const generalMiddleware = store => next => async (action) => {
 	const result = next(action);
 	const newState = store.getState();
 
-	reduxSharedMiddleware(store, next, action);
+	await reduxSharedMiddleware(store, next, action);
 
 	if (action.type == "NAV_GO") Keyboard.dismiss();
 
 	if (["NOTE_UPDATE_ONE", "NOTE_DELETE", "FOLDER_UPDATE_ONE", "FOLDER_DELETE"].indexOf(action.type) >= 0) {
 		if (!await reg.syncTarget().syncStarted()) reg.scheduleSync(5 * 1000, { syncSteps: ["update_remote", "delete_remote"] });
+		SearchEngine.instance().scheduleSyncTables();
 	}
 
 	if (['EVENT_NOTE_ALARM_FIELD_CHANGE', 'NOTE_DELETE'].indexOf(action.type) >= 0) {
@@ -138,6 +142,10 @@ const generalMiddleware = store => next => async (action) => {
 		DecryptionWorker.instance().scheduleStart();
 	}
 
+	if (action.type === 'SYNC_CREATED_RESOURCE') {
+		ResourceFetcher.instance().queueDownload(action.id);
+	}
+
   	return result;
 }
 
@@ -146,6 +154,11 @@ let navHistory = [];
 function historyCanGoBackTo(route, nextRoute) {
 	if (route.routeName === 'Note') return false;
 	if (route.routeName === 'Folder') return false;
+
+	// There's no point going back to these screens in general and, at least in OneDrive case,
+	// it can be buggy to do so, due to incorrectly relying on global state (reg.syncTarget...) 
+	if (route.routeName === 'OneDriveLogin') return false;
+	if (route.routeName === 'DropboxLogin') return false;
 
 	return true;
 }
@@ -408,8 +421,19 @@ async function initialize(dispatch) {
 			if (!locale) locale = defaultLocale();
 			Setting.setValue('locale', closestSupportedLocale(locale));
 			if (Setting.value('env') === 'dev') Setting.setValue('sync.target', SyncTargetRegistry.nameToId('onedrive_dev'));
-			Setting.setValue('firstStart', 0)
+			Setting.setValue('firstStart', 0);
 		}
+
+		if (Setting.value('db.ftsEnabled') === -1) {
+			const ftsEnabled = await db.ftsEnabled();
+			Setting.setValue('db.ftsEnabled', ftsEnabled ? 1 : 0);
+			reg.logger().info('db.ftsEnabled = ', Setting.value('db.ftsEnabled'));
+		}
+
+		// Note: for now we hard-code the folder sort order as we need to 
+		// create a UI to allow customisation (started in branch mobile_add_sidebar_buttons)
+		Setting.setValue('folders.sortOrder.field', 'title');
+		Setting.setValue('folders.sortOrder.reverse', false);
 
 		reg.logger().info('Sync target: ' + Setting.value('sync.target'));
 
@@ -435,7 +459,7 @@ async function initialize(dispatch) {
 
 		await FoldersScreenUtils.refreshFolders();
 
-		const tags = await Tag.all();
+		const tags = await Tag.allWithNotes();
 
 		dispatch({
 			type: 'TAG_UPDATE_ALL',
@@ -472,6 +496,7 @@ async function initialize(dispatch) {
 			});
 		}
 	} catch (error) {
+		alert('Initialization error: ' + error.message);
 		reg.logger().error('Initialization error:', error);
 	}
 
@@ -483,6 +508,14 @@ async function initialize(dispatch) {
 
 	ResourceService.runInBackground();
 
+	ResourceFetcher.instance().setFileApi(() => { return reg.syncTarget().fileApi() });
+	ResourceFetcher.instance().setLogger(reg.logger());
+	ResourceFetcher.instance().start();
+
+	SearchEngine.instance().setDb(reg.db());
+	SearchEngine.instance().setLogger(reg.logger());
+	SearchEngine.instance().scheduleSyncTables();
+
 	reg.scheduleSync().then(() => {
 		// Wait for the first sync before updating the notifications, since synchronisation
 		// might change the notifications.
@@ -490,6 +523,8 @@ async function initialize(dispatch) {
 
 		DecryptionWorker.instance().scheduleStart();
 	});
+
+	await WelcomeUtils.install(dispatch);
 
 	reg.logger().info('Application initialized');
 }
@@ -524,23 +559,41 @@ class AppComponent extends React.Component {
 			});
 		}
 
-		try {
-			const { type, value } = await ShareExtension.data();
+		if (Platform.OS !== 'ios') {
+			try {
+				const { type, value } = await ShareExtension.data();
 
-			if (type != "" && this.props.selectedFolderId) {
+				// reg.logger().info('Got share data:', type, value);
 
-				this.props.dispatch({
-					type: 'NAV_GO',
-					routeName: 'Note',
-					noteId: null,
-					sharedData: {type: type, value: value},
-					folderId: this.props.selectedFolderId,
-					itemType: 'note',
-				});
+				if (type != "" && this.props.selectedFolderId) {
+					const newNote = await Note.save({
+						title: Note.defaultTitleFromBody(value),
+						body: value,
+						parent_id: this.props.selectedFolderId
+					});
+
+					// This is a bit hacky, but the surest way to go to 
+					// the needed note. We go back one screen in case there's
+					// already a note open - if we don't do this, the dispatch
+					// below will do nothing (because routeName wouldn't change)
+					// Then we wait a bit for the state to be set correctly, and
+					// finally we go to the new note.
+					this.props.dispatch({
+						type: 'NAV_BACK',
+					});
+
+					setTimeout(() => {
+						this.props.dispatch({
+							type: 'NAV_GO',
+							routeName: 'Note',
+							noteId: newNote.id,
+						});
+					}, 5);
+				}
+
+			} catch(e) {
+				reg.logger().error('Error in ShareExtension.data', e);
 			}
-
-		} catch(e) {
-			reg.logger().error('Error in ShareExtension.data', e);
 		}
 
 		BackButtonService.initialize(this.backButtonHandler_);
@@ -596,13 +649,15 @@ class AppComponent extends React.Component {
 
 	render() {
 		if (this.props.appState != 'ready') return null;
+		const theme = themeStyle(this.props.theme);
 
-		const sideMenuContent = <SafeAreaView style={{flex:1}}><SideMenuContent/></SafeAreaView>;
+		const sideMenuContent = <SafeAreaView style={{flex:1, backgroundColor: theme.backgroundColor}}><SideMenuContent/></SafeAreaView>;
 
 		const appNavInit = {
 			Welcome: { screen: WelcomeScreen },
 			Notes: { screen: NotesScreen },
 			Note: { screen: NoteScreen },
+			Tags: { screen: TagsScreen },
 			Folder: { screen: FolderScreen },
 			OneDriveLogin: { screen: OneDriveLoginScreen },
 			DropboxLogin: { screen: DropboxLoginScreen },
@@ -625,7 +680,8 @@ class AppComponent extends React.Component {
 				}}
 				>
 				<MenuContext style={{ flex: 1 }}>
-					<SafeAreaView style={{flex:1}}>
+					<SafeAreaView style={{flex:0, backgroundColor: theme.raisedBackgroundColor}} />
+					<SafeAreaView style={{flex:1, backgroundColor: theme.backgroundColor}}>
 						<AppNav screens={appNavInit} />
 					</SafeAreaView>
 					<DropdownAlert ref={ref => this.dropdownAlert_ = ref} tapToCloseEnabled={true} />
@@ -643,6 +699,7 @@ const mapStateToProps = (state) => {
 		appState: state.appState,
 		noteSelectionEnabled: state.noteSelectionEnabled,
 		selectedFolderId: state.selectedFolderId,
+		theme: state.settings.theme
 	};
 };
 

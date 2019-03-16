@@ -3,7 +3,7 @@ require('app-module-path').addPath(__dirname + '/../ReactNativeClient');
 const fetch = require('node-fetch');
 const fs = require('fs-extra');
 const { dirname } = require('lib/path-utils.js');
-const stringPadding = require('string-padding');
+const markdownUtils = require('lib/markdownUtils');
 
 const rootDir = dirname(__dirname);
 
@@ -53,38 +53,7 @@ function createChangeLog(releases) {
 	return output.join('\n\n');
 }
 
-function createMarkdownTable(headers, rows) {
-	let output = [];
-
-	const headersMd = [];
-	const lineMd = [];
-	for (let i = 0; i < headers.length; i++) {
-		const mdRow = [];
-		const h = headers[i];
-		headersMd.push(stringPadding(h.label, 3, ' ', stringPadding.RIGHT));
-		lineMd.push('---');
-	}
-
-	output.push(headersMd.join(' | '));
-	output.push(lineMd.join(' | '));
-
-	for (let i = 0; i < rows.length; i++) {
-		const row = rows[i];
-		const rowMd = [];
-		for (let j = 0; j < headers.length; j++) {
-			const h = headers[j];
-			rowMd.push(stringPadding(row[h.name], 3, ' ', stringPadding.RIGHT));
-		}
-		output.push(rowMd.join(' | '));
-	}
-
-	return output.join('\n');
-}
-
 async function main() {
-	const response = await fetch('https://api.github.com/repos/laurent22/joplin/releases');
-	//const response = await fetch('http://test.local/releases.json');
-	const releases = await response.json();
 	const rows = [];
 
 	const totals = {
@@ -93,22 +62,38 @@ async function main() {
 		linux_count: 0,
 	};
 
-	for (let i = 0; i < releases.length; i++) {
-		const release = releases[i];
-		if (!release.tag_name.match(/^v\d+\.\d+\.\d+$/)) continue;
-		if (release.draft) continue;
-		
-		let row = {};
-		row = Object.assign(row, downloadCounts(release));
-		row.tag_name = '[' + release.tag_name + '](https://github.com/laurent22/joplin/releases/tag/' + release.tag_name + ')';
-		row.published_at = release.published_at;
-		row.body = release.body;
+	const processReleases = (releases) => {
+		for (let i = 0; i < releases.length; i++) {
+			const release = releases[i];
+			if (!release.tag_name.match(/^v\d+\.\d+\.\d+$/)) continue;
+			if (release.draft) continue;
+			
+			let row = {};
+			row = Object.assign(row, downloadCounts(release));
+			row.tag_name = '[' + release.tag_name + '](https://github.com/laurent22/joplin/releases/tag/' + release.tag_name + ')';
+			row.published_at = release.published_at;
+			row.body = release.body;
 
-		totals.windows_count += row.windows_count;
-		totals.mac_count += row.mac_count;
-		totals.linux_count += row.linux_count;
+			totals.windows_count += row.windows_count;
+			totals.mac_count += row.mac_count;
+			totals.linux_count += row.linux_count;
 
-		rows.push(row);
+			rows.push(row);
+		}
+	}
+
+	console.info('Build stats: Downloading releases info...');
+
+	const baseUrl = 'https://api.github.com/repos/laurent22/joplin/releases?page=';
+	// const baseUrl = 'http://test.local/releases.json?page='
+	let pageNum = 1;
+	while (true) {
+		console.info('Build stats: Page ' + pageNum);
+		const response = await fetch(baseUrl + (pageNum + ''));
+		const releases = await response.json();
+		if (!releases || !releases.length) break;
+		processReleases(releases);
+		pageNum++;
 	}
 
 	const changelogText = createChangeLog(rows);
@@ -119,25 +104,34 @@ async function main() {
 	totals.mac_percent = totals.mac_count / grandTotal;
 	totals.linux_percent = totals.linux_count / grandTotal;
 
+	const formatter = new Intl.NumberFormat('en-US', { style: 'decimal' });
+
 	const totalsMd = [
-		{ name: 'Total Windows downloads', value: totals.windows_count },
-		{ name: 'Total macOs downloads', value: totals.mac_count },
-		{ name: 'Total Linux downloads', value: totals.linux_count },
+		{ name: 'Total Windows downloads', value: formatter.format(totals.windows_count) },
+		{ name: 'Total macOs downloads', value: formatter.format(totals.mac_count) },
+		{ name: 'Total Linux downloads', value: formatter.format(totals.linux_count) },
 		{ name: 'Windows %', value: Math.round(totals.windows_percent * 100) + '%' },
 		{ name: 'macOS %', value: Math.round(totals.mac_percent * 100) + '%' },
 		{ name: 'Linux %', value: Math.round(totals.linux_percent * 100) + '%' },
 	];
 
+	for (let i = 0; i < rows.length; i++) {
+		rows[i].mac_count = formatter.format(rows[i].mac_count);
+		rows[i].windows_count = formatter.format(rows[i].windows_count);
+		rows[i].linux_count = formatter.format(rows[i].linux_count);
+		rows[i].total_count = formatter.format(rows[i].total_count);
+	}
+
 	const statsMd = [];
 
 	statsMd.push('# Joplin statistics');
 
-	statsMd.push(createMarkdownTable([
+	statsMd.push(markdownUtils.createMarkdownTable([
 		{ name: 'name', label: 'Name' },
 		{ name: 'value', label: 'Value' },
 	], totalsMd));
 
-	statsMd.push(createMarkdownTable([
+	statsMd.push(markdownUtils.createMarkdownTable([
 		{ name: 'tag_name', label: 'Version' },
 		{ name: 'published_at', label: 'Date' },
 		{ name: 'windows_count', label: 'Windows' },

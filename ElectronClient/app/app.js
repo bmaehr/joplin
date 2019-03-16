@@ -24,7 +24,7 @@ const InteropService = require('lib/services/InteropService');
 const InteropServiceHelper = require('./InteropServiceHelper.js');
 const ResourceService = require('lib/services/ResourceService');
 const ClipperServer = require('lib/ClipperServer');
-
+const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
 const { bridge } = require('electron').remote.require('./bridge');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
@@ -42,6 +42,7 @@ const appDefaultState = Object.assign({}, defaultState, {
 	sidebarVisibility: true,
 	windowContentSize: bridge().windowContentSize(),
 	watchedNoteFiles: [],
+	lastEditorScrollPercents: {},
 });
 
 class Application extends BaseApplication {
@@ -49,7 +50,6 @@ class Application extends BaseApplication {
 	constructor() {
 		super();
 		this.lastMenuScreen_ = null;
-		this.powerSaveBlockerId_ = null;
 	}
 
 	hasGui() {
@@ -166,8 +166,18 @@ class Application extends BaseApplication {
 
 				case 'NOTE_FILE_WATCHER_CLEAR':
 
+					if (state.watchedNoteFiles.length) {
+						newState = Object.assign({}, state);
+						newState.watchedNoteFiles = [];
+					}
+					break;
+
+				case 'EDITOR_SCROLL_PERCENT_SET':
+
 					newState = Object.assign({}, state);
-					newState.watchedNoteFiles = [];
+					const newPercents = Object.assign({}, newState.lastEditorScrollPercents);
+					newPercents[action.noteId] = action.percent;
+					newState.lastEditorScrollPercents = newPercents;
 					break;
 
 			}
@@ -196,10 +206,6 @@ class Application extends BaseApplication {
 			this.updateEditorFont();
 		}
 
-		if (["NOTE_UPDATE_ONE", "NOTE_DELETE", "FOLDER_UPDATE_ONE", "FOLDER_DELETE"].indexOf(action.type) >= 0) {
-			if (!await reg.syncTarget().syncStarted()) reg.scheduleSync(30 * 1000, { syncSteps: ["update_remote", "delete_remote"] });
-		}
-
 		if (['EVENT_NOTE_ALARM_FIELD_CHANGE', 'NOTE_DELETE'].indexOf(action.type) >= 0) {
 			await AlarmService.updateNoteNotification(action.id, action.type === 'NOTE_DELETE');
 		}
@@ -219,17 +225,6 @@ class Application extends BaseApplication {
 			Setting.setValue('sidebarVisibility', newState.sidebarVisibility);
 		}
 
-		if (action.type === 'SYNC_STARTED') {
-			if (!this.powerSaveBlockerId_) this.powerSaveBlockerId_ = bridge().powerSaveBlockerStart('prevent-app-suspension');
-		}
-
-		if (action.type === 'SYNC_COMPLETED') {
-			if (this.powerSaveBlockerId_) {
-				bridge().powerSaveBlockerStop(this.powerSaveBlockerId_);
-				this.powerSaveBlockerId_ = null;
-			}
-		}
-
 		return result;
 	}
 
@@ -239,24 +234,77 @@ class Application extends BaseApplication {
 		this.updateMenu(screen);
 	}
 
+	focusElement_(target) {
+		this.dispatch({
+			type: 'WINDOW_COMMAND',
+			name: 'focusElement',
+			target: target,
+		});
+	}
+
 	updateMenu(screen) {
 		if (this.lastMenuScreen_ === screen) return;
 
-		const sortNoteItems = [];
-		const sortNoteOptions = Setting.enumOptions('notes.sortOrder.field');
-		for (let field in sortNoteOptions) {
-			if (!sortNoteOptions.hasOwnProperty(field)) continue;
-			sortNoteItems.push({
-				label: sortNoteOptions[field],
-				screens: ['Main'],
+		const sortNoteFolderItems = (type) => {
+			const sortItems = [];
+			const sortOptions = Setting.enumOptions(type + '.sortOrder.field');
+			for (let field in sortOptions) {
+				if (!sortOptions.hasOwnProperty(field)) continue;
+				sortItems.push({
+					label: sortOptions[field],
+					screens: ['Main'],
+					type: 'checkbox',
+					checked: Setting.value(type + '.sortOrder.field') === field,
+					click: () => {
+						Setting.setValue(type + '.sortOrder.field', field);
+						this.refreshMenu();
+					}
+				});
+			}
+			
+			sortItems.push({ type: 'separator' });
+
+			sortItems.push({
+				label: Setting.settingMetadata(type + '.sortOrder.reverse').label(),
 				type: 'checkbox',
-				checked: Setting.value('notes.sortOrder.field') === field,
+				checked: Setting.value(type + '.sortOrder.reverse'),
+				screens: ['Main'],
 				click: () => {
-					Setting.setValue('notes.sortOrder.field', field);
-					this.refreshMenu();
-				}
+					Setting.setValue(type + '.sortOrder.reverse', !Setting.value(type + '.sortOrder.reverse'));
+				},
 			});
+
+			return sortItems;
 		}
+
+		const sortNoteItems = sortNoteFolderItems('notes');
+		const sortFolderItems = sortNoteFolderItems('folders');
+
+		const focusItems = [];
+
+		focusItems.push({
+			label: _('Sidebar'),
+			click: () => { this.focusElement_('sideBar') },
+			accelerator: 'CommandOrControl+Shift+S',
+		});
+
+		focusItems.push({
+			label: _('Note list'),
+			click: () => { this.focusElement_('noteList') },
+			accelerator: 'CommandOrControl+Shift+L',
+		});
+
+		focusItems.push({
+			label: _('Note title'),
+			click: () => { this.focusElement_('noteTitle') },
+			accelerator: 'CommandOrControl+Shift+N',
+		});
+
+		focusItems.push({
+			label: _('Note body'),
+			click: () => { this.focusElement_('noteBody') },
+			accelerator: 'CommandOrControl+Shift+B',
+		});
 
 		const importItems = [];
 		const exportItems = [];
@@ -339,7 +387,11 @@ class Application extends BaseApplication {
 
 		const template = [
 			{
-				label: _('File'),
+				label: _('&File'),
+				/* `&` before one of the char in the label name mean, that
+				 * <Alt + F> will open this menu. It's needed becase electron
+				 * opens the first menu on Alt press if no hotkey assigned.
+				 * Issue: https://github.com/laurent22/joplin/issues/934 */
 				submenu: [{
 					label: _('New note'),
 					accelerator: 'CommandOrControl+N',
@@ -380,6 +432,18 @@ class Application extends BaseApplication {
 				}, {
 					type: 'separator',
 				}, {
+					label: _('Synchronise'),
+					accelerator: 'CommandOrControl+S',
+					screens: ['Main'],
+					click: async () => {
+						this.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'synchronize',
+						});
+					}
+				}, {
+					type: 'separator',
+				}, {
 					label: _('Print'),
 					accelerator: 'CommandOrControl+P',
 					screens: ['Main'],
@@ -405,7 +469,7 @@ class Application extends BaseApplication {
 					click: () => { bridge().electronApp().quit() }
 				}]
 			}, {
-				label: _('Edit'),
+				label: _('&Edit'),
 				submenu: [{
 					label: _('Copy'),
 					role: 'copy',
@@ -418,6 +482,10 @@ class Application extends BaseApplication {
 					label: _('Paste'),
 					role: 'paste',
 					accelerator: 'CommandOrControl+V',
+				}, {
+					label: _('Select all'),
+					role: 'selectall',
+					accelerator: 'CommandOrControl+A',
 				}, {
 					type: 'separator',
 					screens: ['Main'],
@@ -442,9 +510,21 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					label: _('Link'),
+					screens: ['Main'],
+					accelerator: 'CommandOrControl+K',
+					click: () => {
+						this.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'textLink',
+						});
+					},
+				}, {
+					type: 'separator',
+					screens: ['Main'],
+				}, {
 					label: _('Insert Date Time'),
 					screens: ['Main'],
-					visible: false,
 					accelerator: 'CommandOrControl+Shift+T',
 					click: () => {
 						this.dispatch({
@@ -466,22 +546,35 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					type: 'separator',
+					screens: ['Main'],
+				}, {
 					label: _('Search in all the notes'),
 					screens: ['Main'],
-					accelerator: 'CommandOrControl+F',
+					accelerator: shim.isMac() ? 'Shift+Command+F' : 'F6',
 					click: () => {
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
 							name: 'focus_search',
 						});
 					},
+				}, {
+					label: _('Search in current note'),
+					screens: ['Main'],
+					accelerator: 'CommandOrControl+F',
+					click: () => {
+						this.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'showLocalSearch',
+						});
+					},
 				}],
 			}, {
-				label: _('View'),
+				label: _('&View'),
 				submenu: [{
 					label: _('Toggle sidebar'),
 					screens: ['Main'],
-					accelerator: 'F10',
+					accelerator: shim.isMac() ? 'Option+Command+S' : 'F10',
 					click: () => {
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
@@ -506,13 +599,9 @@ class Application extends BaseApplication {
 					screens: ['Main'],
 					submenu: sortNoteItems,
 				}, {
-					label: Setting.settingMetadata('notes.sortOrder.reverse').label(),
-					type: 'checkbox',
-					checked: Setting.value('notes.sortOrder.reverse'),
+					label: Setting.settingMetadata('folders.sortOrder.field').label(),
 					screens: ['Main'],
-					click: () => {
-						Setting.setValue('notes.sortOrder.reverse', !Setting.value('notes.sortOrder.reverse'));
-					},
+					submenu: sortFolderItems,
 				}, {
 					label: Setting.settingMetadata('uncompletedTodosOnTop').label(),
 					type: 'checkbox',
@@ -529,9 +618,16 @@ class Application extends BaseApplication {
 					click: () => {
 						Setting.setValue('showCompletedTodos', !Setting.value('showCompletedTodos'));
 					},
+				}, {
+					type: 'separator',
+					screens: ['Main'],
+				}, {
+					label: _('Focus'),
+					screens: ['Main'],
+					submenu: focusItems,
 				}],
 			}, {
-				label: _('Tools'),
+				label: _('&Tools'),
 				submenu: [{
 					label: _('Synchronisation status'),
 					click: () => {
@@ -570,7 +666,7 @@ class Application extends BaseApplication {
 					}
 				}],
 			}, {
-				label: _('Help'),
+				label: _('&Help'),
 				submenu: [{
 					label: _('Website and documentation'),
 					accelerator: 'F1',
@@ -581,7 +677,7 @@ class Application extends BaseApplication {
 				}, {
 					label: _('Check for updates...'),
 					click: () => {
-						bridge().checkForUpdates(false, bridge().window(), this.checkForUpdateLoggerPath());
+						bridge().checkForUpdates(false, bridge().window(), this.checkForUpdateLoggerPath(), { includePreReleases: Setting.value('autoUpdate.includePreReleases') });
 					}
 				}, {
 					type: 'separator',
@@ -593,7 +689,7 @@ class Application extends BaseApplication {
 						let message = [
 							p.description,
 							'',
-							'Copyright © 2016-2018 Laurent Cozic',
+							'Copyright © 2016-2019 Laurent Cozic',
 							_('%s %s (%s, %s)', p.name, p.version, Setting.value('env'), process.platform),
 						];
 						bridge().showInfoMessageBox(message.join('\n'), {
@@ -682,6 +778,23 @@ class Application extends BaseApplication {
 		document.head.appendChild(styleTag);
 	}
 
+	async loadCustomCss(filePath) {
+		let cssString = '';
+		if (await fs.pathExists(filePath)) {
+			try {
+				cssString = await fs.readFile(filePath, 'utf-8');
+
+			} catch (error) {
+				let msg = error.message ? error.message : '';
+				msg = 'Could not load custom css from ' + filePath + '\n' + msg;
+				error.message = msg;
+				throw error;
+			}
+		}
+
+		return cssString;
+	}
+
 	async start(argv) {
 		const electronIsDev = require('electron-is-dev');
 
@@ -735,14 +848,19 @@ class Application extends BaseApplication {
 			ids: Setting.value('collapsedFolderIds'),
 		});
 
-		if (shim.isLinux()) bridge().setAllowPowerSaveBlockerToggle(true);
+		const cssString = await this.loadCustomCss(Setting.value('profileDir') + '/userstyle.css');
+
+		this.store().dispatch({
+			type: 'LOAD_CUSTOM_CSS',
+			css: cssString
+		});
 
 		// Note: Auto-update currently doesn't work in Linux: it downloads the update
 		// but then doesn't install it on exit.
 		if (shim.isWindows() || shim.isMac()) {
 			const runAutoUpdateCheck = () => {
 				if (Setting.value('autoUpdateEnabled')) {
-					bridge().checkForUpdates(true, bridge().window(), this.checkForUpdateLoggerPath());
+					bridge().checkForUpdates(true, bridge().window(), this.checkForUpdateLoggerPath(), { includePreReleases: Setting.value('autoUpdate.includePreReleases') });
 				}
 			}
 
@@ -786,6 +904,9 @@ class Application extends BaseApplication {
 		if (Setting.value('clipperServer.autoStart')) {
 			ClipperServer.instance().start();
 		}
+
+		ExternalEditWatcher.instance().setLogger(reg.logger());
+		ExternalEditWatcher.instance().dispatch = this.store().dispatch;
 	}
 
 }

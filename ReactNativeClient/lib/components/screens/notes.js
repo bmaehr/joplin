@@ -114,7 +114,7 @@ class NotesScreenComponent extends BaseScreenComponent {
 		if (props.notesParentType == 'Folder') {
 			notes = await Note.previews(props.selectedFolderId, options);
 		} else {
-			notes = await Tag.notes(props.selectedTagId); // TODO: should also return previews
+			notes = await Tag.notes(props.selectedTagId, options);
 		}
 
 		this.props.dispatch({
@@ -203,7 +203,7 @@ class NotesScreenComponent extends BaseScreenComponent {
 		let title = parent ? parent.title : null;
 		const addFolderNoteButtons = this.props.selectedFolderId && this.props.selectedFolderId != Folder.conflictFolderId();
 		const thisComp = this;
-		const actionButtonComp = this.props.noteSelectionEnabled ? null : <ActionButton addFolderNoteButtons={addFolderNoteButtons} parentFolderId={this.props.selectedFolderId}></ActionButton>
+		const actionButtonComp = this.props.noteSelectionEnabled || !this.props.visible ? null : <ActionButton addFolderNoteButtons={addFolderNoteButtons} parentFolderId={this.props.selectedFolderId}></ActionButton>
 
 		return (
 			<View style={rootStyle}>

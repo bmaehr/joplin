@@ -1,10 +1,12 @@
 const React = require('react'); const Component = React.Component;
 const { Platform, WebView, View } = require('react-native');
-const { globalStyle } = require('lib/components/global-style.js');
+const { themeStyle } = require('lib/components/global-style.js');
 const Resource = require('lib/models/Resource.js');
 const Setting = require('lib/models/Setting.js');
 const { reg } = require('lib/registry.js');
+const { shim } = require('lib/shim');
 const MdToHtml = require('lib/MdToHtml.js');
+const shared = require('lib/components/shared/note-screen-shared.js');
 
 class NoteBodyViewer extends Component {
 
@@ -29,6 +31,10 @@ class NoteBodyViewer extends Component {
 	}
 
 	onLoadEnd() {
+		setTimeout(() => {
+			if (this.props.onLoadEnd) this.props.onLoadEnd();
+		}, 100);
+
 		if (this.state.webViewLoaded) return;
 
 		// Need to display after a delay to avoid a white flash before
@@ -40,6 +46,13 @@ class NoteBodyViewer extends Component {
 	}
 
 	shouldComponentUpdate(nextProps, nextState) {
+
+		const safeGetNoteProp = (props, propName) => {
+			if (!props) return null;
+			if (!props.note) return null;
+			return props.note[propName];
+		}
+
 		// To address https://github.com/laurent22/joplin/issues/433
 		// If a checkbox in a note is ticked, the body changes, which normally would trigger a re-render
 		// of this component, which has the unfortunate side effect of making the view scroll back to the top.
@@ -47,24 +60,55 @@ class NoteBodyViewer extends Component {
 		// So here, if the note has not changed, we prevent the component from updating.
 		// This fixes the above issue. A drawback of this is if the note is updated via sync, this change
 		// will not be displayed immediately.
-		const currentNoteId = this.props && this.props.note ? this.props.note.id : null;
-		const nextNoteId = nextProps && nextProps.note ? nextProps.note.id : null;
-		return currentNoteId !== nextNoteId || nextState.webViewLoaded !== this.state.webViewLoaded;
+		const currentNoteId = safeGetNoteProp(this.props, 'id');
+		const nextNoteId = safeGetNoteProp(nextProps, 'id');
+		
+		if (currentNoteId !== nextNoteId || nextState.webViewLoaded !== this.state.webViewLoaded) return true;
+
+		// If the length of the body has changed, then it's something other than a checkbox that has changed,
+		// for example a resource that has been attached to the note while in View mode. In that case, update.
+		return (safeGetNoteProp(this.props, 'body') + '').length !== (safeGetNoteProp(nextProps, 'body') + '').length;
+	}
+
+	rebuildMd() {
+		// this.mdToHtml_.clearCache();
+		this.forceUpdate();
 	}
 
 	render() {
 		const note = this.props.note;
 		const style = this.props.style;
 		const onCheckboxChange = this.props.onCheckboxChange;
+		const theme = themeStyle(this.props.theme);
+
+		const bodyToRender = note ? note.body : '';
 
 		const mdOptions = {
 			onResourceLoaded: () => {
-				this.forceUpdate();
+				if (this.resourceLoadedTimeoutId_) {
+					clearTimeout(this.resourceLoadedTimeoutId_);
+					this.resourceLoadedTimeoutId_ = null;
+				}
+
+				this.resourceLoadedTimeoutId_ = setTimeout(() => {
+					this.resourceLoadedTimeoutId_ = null;
+					this.forceUpdate();
+				}, 100);
 			},
 			paddingBottom: '3.8em', // Extra bottom padding to make it possible to scroll past the action button (so that it doesn't overlap the text)
+			highlightedKeywords: this.props.highlightedKeywords,
+			resources: this.props.noteResources,//await shared.attachedResources(bodyToRender),
+			codeTheme: theme.codeThemeCss,
 		};
 
-		let html = this.mdToHtml_.render(note ? note.body : '', this.props.webViewStyle, mdOptions);
+		let result = this.mdToHtml_.render(bodyToRender, this.props.webViewStyle, mdOptions);
+		let html = result.html;
+
+		const injectedJs = [this.mdToHtml_.injectedJavaScript()];
+		injectedJs.push(shim.injectedJs('webviewLib'));
+		injectedJs.push('webviewLib.initialize({ postMessage: postMessage });');
+
+		console.info(injectedJs);
 
 		html = `
 			<!DOCTYPE html>
@@ -78,7 +122,7 @@ class NoteBodyViewer extends Component {
 			</html>
 		`;
 
-		let webViewStyle = {}
+		let webViewStyle = {'backgroundColor': this.props.webViewStyle.backgroundColor}
 		// On iOS, the onLoadEnd() event is never fired so always
 		// display the webview (don't do the little trick
 		// to avoid the white flash).
@@ -116,14 +160,18 @@ class NoteBodyViewer extends Component {
 					scalesPageToFit={Platform.OS !== 'ios'}
 					style={webViewStyle}
 					source={source}
+					injectedJavaScript={injectedJs.join('\n')}
+					originWhitelist={['file://*', './*', 'http://*', 'https://*']}
+					mixedContentMode="always"
+					allowFileAccess={true}
 					onLoadEnd={() => this.onLoadEnd()}
 					onError={() => reg.logger().error('WebView error') }
 					onMessage={(event) => {
 						let msg = event.nativeEvent.data;
 
 						if (msg.indexOf('checkboxclick:') === 0) {
-							const newBody = this.mdToHtml_.handleCheckboxClick(msg, this.props.note.body);
-							if (onCheckboxChange) onCheckboxChange(newBody);
+							const newBody = shared.toggleCheckbox(msg, this.props.note.body);
+							if (this.props.onCheckboxChange) this.props.onCheckboxChange(newBody);
 						} else if (msg.indexOf('bodyscroll:') === 0) {
 							//msg = msg.split(':');
 							//this.bodyScrollTop_ = Number(msg[1]);

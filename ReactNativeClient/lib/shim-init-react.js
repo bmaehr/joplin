@@ -1,12 +1,25 @@
 const { shim } = require('lib/shim.js');
 const { GeolocationReact } = require('lib/geolocation-react.js');
 const { PoorManIntervals } = require('lib/poor-man-intervals.js');
-const RNFetchBlob = require('react-native-fetch-blob').default;
+const RNFetchBlob = require('rn-fetch-blob').default;
 const { generateSecureRandom }  = require('react-native-securerandom');
 const FsDriverRN = require('lib/fs-driver-rn.js').FsDriverRN;
 const urlValidator = require('valid-url');
 const { Buffer } = require('buffer');
 const { Linking } = require('react-native');
+const mimeUtils = require('lib/mime-utils.js').mime;
+const { basename, fileExtension } = require('lib/path-utils.js');
+const { uuid } = require('lib/uuid.js');
+const Resource = require('lib/models/Resource');
+
+const injectedJs = {
+	webviewLib: require('lib/rnInjectedJs/webviewLib'),
+};
+
+const cssToJs = {
+	'hljs-atom-one-dark-reasonable.css': require('lib/csstojs/hljs-atom-one-dark-reasonable.css.js'),
+	'hljs-atom-one-light.css': require('lib/csstojs/hljs-atom-one-light.css.js'),
+};
 
 function shimInit() {
 	shim.Geolocation = GeolocationReact;
@@ -129,6 +142,47 @@ function shimInit() {
 			requestAnimationFrame(function() { resolve(); });
 		});
 	}
+
+	// NOTE: This is a limited version of createResourceFromPath - unlike the Node version, it
+	// only really works with images. It does not resize the image either.
+	shim.createResourceFromPath = async function(filePath, defaultProps = null) {
+		defaultProps = defaultProps ? defaultProps : {};
+		const resourceId = defaultProps.id ? defaultProps.id : uuid.create();
+
+		const ext = fileExtension(filePath);
+		let mimeType = mimeUtils.fromFileExtension(ext);
+		if (!mimeType) mimeType = 'image/jpeg';
+
+		let resource = Resource.new();
+		resource.id = resourceId;
+		resource.mime = mimeType;
+		resource.title = basename(filePath);
+		resource.file_extension = ext;
+
+		let targetPath = Resource.fullPath(resource);
+		await shim.fsDriver().copy(filePath, targetPath);
+		
+		if (defaultProps) {
+			resource = Object.assign({}, resource, defaultProps);
+		}
+
+		resource = await Resource.save(resource, { isNew: true });
+
+		console.info(resource);
+
+		return resource;
+	}
+
+	shim.injectedJs = function(name) {
+		if (!(name in injectedJs)) throw new Error('Cannot find injectedJs file (add it to "injectedJs" object): ' + name);
+		return injectedJs[name];
+	}
+
+	shim.loadCssFromJs = function(name) {
+		if (!(name in cssToJs)) throw new Error('Cannot find csstojs file (add it to "cssToJs" object): ' + name);
+		return cssToJs[name];
+	}
+
 }
 
 module.exports = { shimInit };

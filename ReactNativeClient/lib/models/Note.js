@@ -2,10 +2,14 @@ const BaseModel = require('lib/BaseModel.js');
 const { sprintf } = require('sprintf-js');
 const BaseItem = require('lib/models/BaseItem.js');
 const ItemChange = require('lib/models/ItemChange.js');
+const Resource = require('lib/models/Resource.js');
 const Setting = require('lib/models/Setting.js');
 const { shim } = require('lib/shim.js');
+const { pregQuote } = require('lib/string-utils.js');
+const { toSystemSlashes } = require('lib/path-utils.js');
 const { time } = require('lib/time-utils.js');
 const { _ } = require('lib/locale.js');
+const ArrayUtils = require('lib/ArrayUtils.js');
 const moment = require('moment');
 const lodash = require('lodash');
 
@@ -25,14 +29,8 @@ class Note extends BaseItem {
 		return field in fieldsToLabels ? fieldsToLabels[field] : field;
 	}
 
-	static async serialize(note, type = null, shownKeys = null, format = null) {
-		let fieldNames = this.fieldNames();
-		fieldNames.push('type_');
-		return super.serialize(note, 'note', fieldNames, format);
-	}
-
-	static async serializeForEdit(note, format = null) {
-		return super.serialize(note, 'note', ['title', 'body'], format);
+	static async serializeForEdit(note) {
+		return this.replaceResourceInternalToExternalLinks(await super.serialize(note, ['title', 'body']));
 	}
 
 	static async unserializeForEdit(content) {
@@ -40,6 +38,7 @@ class Note extends BaseItem {
 		let output = await super.unserialize(content);
 		if (!output.title) output.title = '';
 		if (!output.body) output.body = '';
+		output.body = await this.replaceResourceExternalToInternalLinks(output.body);
 		return output;
 	}
 
@@ -47,7 +46,7 @@ class Note extends BaseItem {
 		let fieldNames = this.fieldNames();
 		fieldNames.push('type_');
 		lodash.pull(fieldNames, 'title', 'body');
-		return super.serialize(note, 'note', fieldNames);
+		return super.serialize(note, fieldNames);
 	}
 
 	static minimalSerializeForDisplay(note) {
@@ -75,12 +74,16 @@ class Note extends BaseItem {
 		lodash.pull(fieldNames, 'updated_time');
 		lodash.pull(fieldNames, 'order');
 
-		return super.serialize(n, 'note', fieldNames);
+		return super.serialize(n, fieldNames);
 	}
 
 	static defaultTitle(note) {
-		if (note.body && note.body.length) {
-			const lines = note.body.trim().split("\n");
+		return this.defaultTitleFromBody(note.body);
+	}
+
+	static defaultTitleFromBody(body) {
+		if (body && body.length) {
+			const lines = body.trim().split("\n");
 			let output = lines[0].trim();
 			// Remove the first #, *, etc.
 			while (output.length) {
@@ -100,7 +103,11 @@ class Note extends BaseItem {
 	static geolocationUrl(note) {
 		if (!('latitude' in note) || !('longitude' in note)) throw new Error('Latitude or longitude is missing');
 		if (!Number(note.latitude) && !Number(note.longitude)) throw new Error(_('This note does not have geolocation information.'));
-		return sprintf('https://www.openstreetmap.org/?lat=%s&lon=%s&zoom=20', note.latitude, note.longitude)
+		return this.geoLocationUrlFromLatLong(note.latitude, note.longitude);
+	}
+
+	static geoLocationUrlFromLatLong(lat, long) {
+		return sprintf('https://www.openstreetmap.org/?lat=%s&lon=%s&zoom=20', lat, long)
 	}
 
 	static modelType() {
@@ -108,11 +115,29 @@ class Note extends BaseItem {
 	}
 
 	static linkedItemIds(body) {
-		// For example: ![](:/fcca2938a96a22570e8eae2565bc6b0b)
 		if (!body || body.length <= 32) return [];
-		const matches = body.match(/\(:\/.{32}\)/g);
-		if (!matches) return [];
-		return matches.map((m) => m.substr(3, 32));
+
+		// For example: ![](:/fcca2938a96a22570e8eae2565bc6b0b)
+		let matches = body.match(/\(:\/[a-zA-Z0-9]{32}\)/g);
+		if (!matches) matches = [];
+		matches = matches.map((m) => m.substr(3, 32));
+
+		// For example: ![](:/fcca2938a96a22570e8eae2565bc6b0b "Some title")
+		let matches2 = body.match(/\(:\/[a-zA-Z0-9]{32}\s(.*?)\)/g);
+		if (!matches2) matches2 = [];
+		matches2 = matches2.map((m) => m.substr(3, 32));
+		matches = matches.concat(matches2)
+
+		// For example: <img src=":/fcca2938a96a22570e8eae2565bc6b0b"/>
+		const imgRegex = /<img.*?src=["']:\/([a-zA-Z0-9]{32})["']/g
+		const imgMatches = [];
+		while (true) {
+			const m = imgRegex.exec(body);
+			if (!m) break;
+			imgMatches.push(m[1]);
+		}
+
+		return ArrayUtils.unique(matches.concat(imgMatches));
 	}
 
 	static async linkedItems(body) {
@@ -142,6 +167,30 @@ class Note extends BaseItem {
 
 	static async linkedResourceIds(body) {
 		return await this.linkedItemIdsByType(BaseModel.TYPE_RESOURCE, body);
+	}
+
+	static async replaceResourceInternalToExternalLinks(body) {
+		const resourceIds = await this.linkedResourceIds(body);
+		const Resource = this.getClass('Resource');
+
+		for (let i = 0; i < resourceIds.length; i++) {
+			const id = resourceIds[i];
+			const resource = await Resource.load(id);
+			if (!resource) continue;
+			body = body.replace(new RegExp(':/' + id, 'gi'), toSystemSlashes(Resource.fullPath(resource)));
+		}
+
+		return body;
+	}
+
+	static async replaceResourceExternalToInternalLinks(body) {
+		const reString = pregQuote(toSystemSlashes(Resource.baseDirectoryPath() + '/')) + '[a-zA-Z0-9\.]+';
+		const re = new RegExp(reString, 'gi');
+		body = body.replace(re, (match) => {
+			const id = Resource.pathToId(match);
+			return ':/' + id;
+		});
+		return body;
 	}
 
 	static new(parentId = '') {
@@ -203,8 +252,9 @@ class Note extends BaseItem {
 		return ['id', 'title', 'body', 'is_todo', 'todo_completed', 'parent_id', 'updated_time', 'user_updated_time', 'user_created_time', 'encryption_applied'];
 	}
 
-	static previewFieldsSql() {
-		return this.db().escapeFields(this.previewFields()).join(',');
+	static previewFieldsSql(fields = null) {
+		if (fields === null) fields = this.previewFields();
+		return this.db().escapeFields(fields).join(',');
 	}
 
 	static async loadFolderNoteByField(folderId, field, value) {
@@ -216,8 +266,6 @@ class Note extends BaseItem {
 			fields: '*',
 		}
 
-		// TODO: add support for limits on .search()
-
 		let results = await this.previews(folderId, options);
 		return results.length ? results[0] : null;
 	}
@@ -227,7 +275,7 @@ class Note extends BaseItem {
 		// is used to sort already loaded notes.
 
 		if (!options) options = {};
-		if (!options.order) options.order = [
+		if (!('order' in options)) options.order = [
 			{ by: 'user_updated_time', dir: 'DESC' },
 			{ by: 'user_created_time', dir: 'DESC' },
 			{ by: 'title', dir: 'DESC' },
@@ -305,8 +353,9 @@ class Note extends BaseItem {
 		return this.search(options);
 	}
 
-	static preview(noteId) {
-		return this.modelSelectOne('SELECT ' + this.previewFieldsSql() + ' FROM notes WHERE is_conflict = 0 AND id = ?', [noteId]);
+	static preview(noteId, options = null) {
+		if (!options) options = { fields: null };
+		return this.modelSelectOne('SELECT ' + this.previewFieldsSql(options.fields) + ' FROM notes WHERE is_conflict = 0 AND id = ?', [noteId]);
 	}
 
 	static conflictedNotes() {
@@ -407,15 +456,36 @@ class Note extends BaseItem {
 		return Note.save(modifiedNote, { autoTimestamp: false });
 	}
 
-	static toggleIsTodo(note) {
+	static changeNoteType(note, type) {
 		if (!('is_todo' in note)) throw new Error('Missing "is_todo" property');
 
-		let output = Object.assign({}, note);
-		output.is_todo = output.is_todo ? 0 : 1;
+		const newIsTodo = type === 'todo' ? 1 : 0;
+
+		if (Number(note.is_todo) === newIsTodo) return note;
+
+		const output = Object.assign({}, note);
+		output.is_todo = newIsTodo;
 		output.todo_due = 0;
 		output.todo_completed = 0;
 
 		return output;
+	}
+
+	static toggleIsTodo(note) {
+		return this.changeNoteType(note, !!note.is_todo ? 'note' : 'todo');
+	}
+
+	static toggleTodoCompleted(note) {
+		if (!('todo_completed' in note)) throw new Error('Missing "todo_completed" property');
+
+		note = Object.assign({}, note);
+		if (note.todo_completed) {
+			note.todo_completed = 0;
+		} else {
+			note.todo_completed = Date.now();
+		}
+		
+		return note;
 	}
 
 	static async duplicate(noteId, options = null) {
@@ -464,17 +534,6 @@ class Note extends BaseItem {
 
 		return note;
 	}
-
-	// Not used?
-
-	// static async delete(id, options = null) {
-	// 	let r = await super.delete(id, options);
-
-	// 	this.dispatch({
-	// 		type: 'NOTE_DELETE',
-	// 		id: id,
-	// 	});
-	// }
 
 	static async batchDelete(ids, options = null) {
 		const result = await super.batchDelete(ids, options);

@@ -15,12 +15,6 @@ class Tag extends BaseItem {
 		return BaseModel.TYPE_TAG;
 	}
 
-	static async serialize(item, type = null, shownKeys = null) {
-		let fieldNames = this.fieldNames();
-		fieldNames.push('type_');
-		return super.serialize(item, 'tag', fieldNames);
-	}
-
 	static async noteIds(tagId) {
 		let rows = await this.db().selectAll('SELECT note_id FROM note_tags WHERE tag_id = ?', [tagId]);
 		let output = [];
@@ -30,13 +24,15 @@ class Tag extends BaseItem {
 		return output;
 	}
 
-	static async notes(tagId) {
+	static async notes(tagId, options = null) {
+		if (options === null) options = {};
+
 		let noteIds = await this.noteIds(tagId);
 		if (!noteIds.length) return [];
 
-		return Note.search({
+		return Note.previews(null, Object.assign({}, options, {
 			conditions: ['id IN ("' + noteIds.join('","') + '")'],
-		});
+		}));
 	}
 
 	// Untag all the notes and delete tag
@@ -84,7 +80,7 @@ class Tag extends BaseItem {
 		}
 
 		this.dispatch({
-			type: 'TAG_UPDATE_ONE',
+			type: 'NOTE_TAG_REMOVE',
 			item: await Tag.load(tagId),
 		});
 	}
@@ -95,7 +91,8 @@ class Tag extends BaseItem {
 	}
 
 	static async allWithNotes() {
-		return await Tag.modelSelectAll('SELECT * FROM tags WHERE id IN (SELECT DISTINCT tag_id FROM note_tags)');
+		const tagIdSql = 'select distinct tags.id from tags left join note_tags nt on nt.tag_id = tags.id left join notes on notes.id = nt.note_id where notes.id IS NOT NULL';
+		return await Tag.modelSelectAll('SELECT * FROM tags WHERE id IN (' + tagIdSql + ')');
 	}
 
 	static async tagsByNoteId(noteId) {

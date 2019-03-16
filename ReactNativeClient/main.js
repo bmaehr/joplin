@@ -13,6 +13,7 @@
 // https://github.com/facebook/react-native/issues/18165#issuecomment-369907978
 //require("ReactFeatureFlags").warnAboutDeprecatedLifecycles = false;
 
+// console.disableYellowBox = true
 
 const { AppRegistry } = require('react-native');
 const { Root } = require('./root.js');

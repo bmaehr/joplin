@@ -229,7 +229,7 @@ const headerHtml = `<!doctype html>
 
 const footerHtml = `
 <div class="footer">
-Copyright (c) 2016-2018 Laurent Cozic
+Copyright (c) 2016-2019 Laurent Cozic
 </div>
 </body>
 </html>
@@ -388,6 +388,8 @@ async function main() {
 	renderFileToHtml(rootDir + '/readme/spec.md', rootDir + '/docs/spec/index.html', { title: 'Specifications' });
 	renderFileToHtml(rootDir + '/readme/stats.md', rootDir + '/docs/stats/index.html', { title: 'Statistics' });
 	renderFileToHtml(rootDir + '/readme/terminal.md', rootDir + '/docs/terminal/index.html', { title: 'Terminal Application' });
+	renderFileToHtml(rootDir + '/readme/api.md', rootDir + '/docs/api/index.html', { title: 'REST API' });
+	renderFileToHtml(rootDir + '/readme/prereleases.md', rootDir + '/docs/prereleases/index.html', { title: 'Pre-releases' });
 }
 
 main().catch((error) => {

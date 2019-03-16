@@ -75,9 +75,14 @@ class BaseItem extends BaseModel {
 		return r.total;
 	}
 
-	static systemPath(itemOrId) {
-		if (typeof itemOrId === 'string') return itemOrId + '.md';
-		return itemOrId.id + '.md';
+	static systemPath(itemOrId, extension = null) {
+		if (extension === null)
+			extension = 'md';
+
+		if (typeof itemOrId === 'string')
+			return itemOrId + '.' + extension;
+		else
+			return itemOrId.id + '.' + extension;
 	}
 
 	static isSystemPath(path) {
@@ -224,7 +229,7 @@ class BaseItem extends BaseModel {
 	static unserialize_format(type, propName, propValue) {
 		if (propName[propName.length - 1] == '_') return propValue; // Private property
 
-		let ItemClass = this.itemClass(type);
+		const ItemClass = this.itemClass(type);
 
 		if (['created_time', 'updated_time', 'user_created_time', 'user_updated_time'].indexOf(propName) >= 0) {
 			if (!propValue) return 0;
@@ -236,7 +241,12 @@ class BaseItem extends BaseModel {
 		return propValue;
 	}
 
-	static async serialize(item, type = null, shownKeys = null, format = null) {
+	static async serialize(item, shownKeys = null, format = null) {
+		if (shownKeys === null) {
+			shownKeys = this.itemClass(item).fieldNames();
+			shownKeys.push('type_');
+		}
+
 		item = this.filter(item);
 
 		let output = {};
@@ -299,9 +309,20 @@ class BaseItem extends BaseModel {
 
 	static async serializeForSync(item) {
 		const ItemClass = this.itemClass(item);
-		let encryptItem = Setting.value('encryption.enabled') && ItemClass.encryptionSupported();
-		let serialized = await ItemClass.serialize(item, null, null, encryptItem?null:'md');
-		if (!encryptItem) {
+		let shownKeys = ItemClass.fieldNames();
+		shownKeys.push('type_');
+
+		// if (ItemClass.syncExcludedKeys) {
+		// 	const keys = ItemClass.syncExcludedKeys();
+		// 	for (let i = 0; i < keys.length; i++) {
+		// 		const idx = shownKeys.indexOf(keys[i]);
+		// 		shownKeys.splice(idx, 1);
+		// 	}
+		// }
+
+		const serialized = await ItemClass.serialize(item, shownKeys);
+
+		if (!Setting.value('encryption.enabled') || !ItemClass.encryptionSupported()) {
 			// Normally not possible since itemsThatNeedSync should only return decrypted items
 			if (!!item.encryption_applied) {
 				throw new JoplinError('Item is encrypted but encryption is currently disabled', 'cannotSyncEncrypted');
@@ -330,7 +351,6 @@ class BaseItem extends BaseModel {
 
 		reducedItem.encryption_applied = 1;
 		reducedItem.encryption_cipher_text = cipherText;
-
 		return ItemClass.serialize(reducedItem)
 	}
 
@@ -421,6 +441,9 @@ class BaseItem extends BaseModel {
 		output.type_ = Number(output.type_);
 
 		if (output.type_ === BaseModel.TYPE_NOTE) output.body = body.join("\n");
+
+		const ItemClass = this.itemClass(output.type_);
+		output = ItemClass.removeUnknownFields(output);
 
 		for (let n in output) {
 			if (!output.hasOwnProperty(n)) continue;
@@ -723,7 +746,12 @@ class BaseItem extends BaseModel {
 		return super.save(o, options);
 	}
 
-	static markdownTag(item) {
+	static markdownTag(itemOrId) {
+		const item = typeof itemOrId === 'object' ? itemOrId : {
+			id: itemOrId,
+			title: '',
+		}; 
+
 		const output = [];
 		output.push('[');
 		output.push(markdownUtils.escapeLinkText(item.title));

@@ -16,6 +16,11 @@
 		}
 
 		mark {
+			background: #F3B717;
+			color: black;
+		}
+
+		.mark-selected {
 			background: #CF3F00;
 			color: white;
 		}
@@ -23,74 +28,45 @@
 		ul ul, ul ol, ol ul, ol ol   {
 			margin-bottom: 0px;			
 		}
-
-		.katex { font-size: 1.3em; } /* This controls the global Katex font size*/
 	</style>
 </head>
 
 <body id="body">
-	<div id="hlScriptContainer"></div>
+	<div id="styleContainer"></div>
 	<div id="markScriptContainer"></div>
 	<div id="content" ondragstart="return false;" ondrop="return false;"></div>
+	<script src="./lib.js"></script>
 
 	<script>
 	const contentElement = document.getElementById('content');
 
-	// ----------------------------------------------------------------------
-	// Handle dynamically loading HLJS when a code element is present
-	// ----------------------------------------------------------------------
+	const ipc = {};
 
-	let hljsScriptAdded = false;
-	let hljsLoaded = false;
+	window.addEventListener('message', (event) => {
+		// Here we only deal with messages that are sent from the main Electro process to the webview.
+		if (!event.data || event.data.target !== 'webview') return;
 
-	function loadHljs(callback) {
-		hljsScriptAdded = true;
+		const callName = event.data.name;
+		const callData = event.data.data;
 
-		const script = document.createElement('script');
-		script.onload = function () {
-			hljsLoaded = true;
-			applyHljs();
-		};
-		script.src = 'highlight/highlight.pack.js';
-		document.getElementById('hlScriptContainer').appendChild(script);
-
-		const link = document.createElement('link');
-		link.rel = 'stylesheet';
-		// https://ace.c9.io/build/kitchen-sink.html
-		// https://highlightjs.org/static/demo/
-		link.href = 'highlight/styles/atom-one-light.css';
-		document.getElementById('hlScriptContainer').appendChild(link);
-	}
-
-	function loadAndApplyHljs() {
-		var codeElements = document.getElementsByClassName('code');
-		if (!codeElements.length) return;
-
-		if (!hljsScriptAdded) {
-			this.loadHljs();
-			return;
+		if (!ipc[callName]) {
+			console.warn('Missing IPC function:', event.data);
+		} else {
+			ipc[callName](callData);
 		}
+	});
 
-		// If HLJS is not loaded yet, no need to do anything. When it loads
-		// it will automatically apply the style to all the code elements.
-		if (hljsLoaded) applyHljs(codeElements);
-	}
-
-	function applyHljs(codeElements) {
-		if (typeof codeElements === 'undefined') codeElements = document.getElementsByClassName('code');
-
-		for (var i = 0; i < codeElements.length; i++) {
-			try {
-				hljs.highlightBlock(codeElements[i]);
-			} catch (error) {
-				console.warn('Cannot highlight code', error);
-			}
+	const loadedCssFiles_ = {};
+	function loadCssFiles(cssFiles) {
+		for (let i = 0; i < cssFiles.length; i++) {
+			const f = cssFiles[i];
+			if (loadedCssFiles_[f]) continue;
+			const link = document.createElement('link');
+			link.rel = 'stylesheet';
+			link.href = f;
+			document.getElementById('styleContainer').appendChild(link);
 		}
 	}
-
-	// ----------------------------------------------------------------------
-	// / Handle dynamically loading HLJS when a code element is present
-	// ----------------------------------------------------------------------
 
 	// Note: the scroll position source of truth is "percentScroll_". This is easier to manage than scrollTop because
 	// the scrollTop value depends on the images being loaded or not. For example, if the scrollTop is saved while
@@ -119,25 +95,14 @@
 		setPercentScroll(percentScroll_);
 	}
 
-	ipcRenderer.on('setHtml', (event, html) => {
+	ipc.setHtml = (event) => {
+		const html = event.html;
+
+		markJsHackMarkerInserted_ = false;
+
 		updateBodyHeight();
 
 		contentElement.innerHTML = html;
-
-		loadAndApplyHljs();
-
-		// Remove the bullet from "ul" for checkbox lists and extra padding
-		// const checkboxes = document.getElementsByClassName('checkbox');
-		// for (let i = 0; i < checkboxes.length; i++) {
-		// 	const cb = checkboxes[i];
-		// 	const ul = cb.parentElement.parentElement;
-		// 	if (!ul) {
-		// 		console.warn('Unexpected layout for checkbox');
-		// 		continue;
-		// 	}
-		// 	ul.style.listStyleType = 'none';
-		// 	ul.style.paddingLeft = 0;
-		// }
 
 		let previousContentHeight = contentElement.scrollHeight;
 		let startTime = Date.now();
@@ -158,10 +123,14 @@
 				}
 			}, 1);
 		}
-	});
+
+		loadCssFiles(event.options.cssFiles);
+	}
 
 	let ignoreNextScrollEvent = false;
-	ipcRenderer.on('setPercentScroll', (event, percent) => {
+	ipc.setPercentScroll = (event) => {
+		const percent = event.percent;
+
 		if (checkScrollIID_) {
 			clearInterval(checkScrollIID_);
 			checkScrollIID_ = null;
@@ -169,10 +138,38 @@
 
 		ignoreNextScrollEvent = true;
 		setPercentScroll(percent);
-	});
+	}
+
+	// HACK for Mark.js bug - https://github.com/julmot/mark.js/issues/127
+	let markJsHackMarkerInserted_ = false;
+	function addMarkJsSpaceHack(document) {
+		if (markJsHackMarkerInserted_) return;
+		
+		const prepareElementsForMarkJs = (elements, type) => {
+			// const markJsHackMarker_ = '&#8203; &#8203;'
+			const markJsHackMarker_ = ' ';
+			for (let i = 0; i < elements.length; i++) {
+				if (!type) {
+					elements[i].innerHTML = elements[i].innerHTML + markJsHackMarker_;
+				} else if (type === 'insertBefore') {
+					elements[i].insertAdjacentHTML('beforeBegin', markJsHackMarker_);
+				}
+			}
+		}
+
+		prepareElementsForMarkJs(document.getElementsByTagName('p'));
+		prepareElementsForMarkJs(document.getElementsByTagName('div'));
+		prepareElementsForMarkJs(document.getElementsByTagName('br'), 'insertBefore');
+		markJsHackMarkerInserted_ = true;
+	}
 
 	let mark_ = null;
-	function setMarkers(keywords) {
+	let markSelectedElement_ = null;
+	function setMarkers(keywords, options = null) {
+		if (!options) options = {};
+
+		// TODO: Add support for scriptType on mobile and CLI
+
 		if (!mark_) {
 			mark_ = new Mark(document.getElementById('content'), {
 				exclude: ['img'],
@@ -180,26 +177,63 @@
 			});
 		}
 
-		mark_.mark(keywords);
+		addMarkJsSpaceHack(document);
+
+		mark_.unmark()
+
+		if (markSelectedElement_) markSelectedElement_.classList.remove('mark-selected');
+
+		let selectedElement = null;
+		let elementIndex = 0;
+
+		const onEachElement = (element) => {
+			if (!('selectedIndex' in options)) return;
+
+			if (('selectedIndex' in options) && elementIndex === options.selectedIndex) {
+				markSelectedElement_ = element;
+				element.classList.add('mark-selected');
+				selectedElement = element;
+			}
+			
+			elementIndex++;
+		}
+
+		for (let i = 0; i < keywords.length; i++) {
+			let keyword = keywords[i];
+
+			markJsUtils.markKeyword(mark_, keyword, {
+				pregQuote: pregQuote,
+				replaceRegexDiacritics: replaceRegexDiacritics,
+			}, {
+				each: onEachElement,				
+			});
+		}
+
+		ipcProxySendToHost('setMarkerCount', elementIndex);
+
+		if (selectedElement) selectedElement.scrollIntoView();
 	}
 
 	let markLoaded_ = false;
-	ipcRenderer.on('setMarkers', (event, keywords) => {
+	ipc.setMarkers = (event) => {
+		const keywords = event.keywords;
+		const options = event.options;
+
 		if (!keywords.length && !markLoaded_) return;
 
 		if (!markLoaded_) {
 			const script = document.createElement('script');
 			script.onload = function() {
-				setMarkers(keywords);
+				setMarkers(keywords, options);
 			};
 
 			script.src = '../../node_modules/mark.js/dist/mark.min.js';
 			document.getElementById('markScriptContainer').appendChild(script);
 			markLoaded_ = true;
 		} else {
-			setMarkers(keywords);
+			setMarkers(keywords, options);
 		}
-	});
+	}
 
 	function maxScrollTop() {
 		return Math.max(0, contentElement.scrollHeight - contentElement.clientHeight);
@@ -210,6 +244,10 @@
 		document.getElementById('body').style.height = window.innerHeight + 'px';
 	}
 
+	const ipcProxySendToHost = (methodName, arg) => {
+		window.postMessage({ target: 'main', name: methodName, args: [ arg ] }, '*');
+	}
+
 	contentElement.addEventListener('scroll', function(e) {
 		if (ignoreNextScrollEvent) {
 			ignoreNextScrollEvent = false;
@@ -218,7 +256,8 @@
 		const m = maxScrollTop();
 		const percent = m ? contentElement.scrollTop / m : 0;
 		setPercentScroll(percent);
-		ipcRenderer.sendToHost('percentScroll', percent);
+		
+		ipcProxySendToHost('percentScroll', percent);
 	});
 
 	document.addEventListener('contextmenu', function(event) {
@@ -228,7 +267,7 @@
 		if (element && !element.getAttribute('data-resource-id')) element = element.parentElement;
 
 		if (element && element.getAttribute('data-resource-id')) {
-			ipcRenderer.sendToHost('contextMenu', {
+			ipcProxySendToHost('contextMenu', {
 				type: element.getAttribute('src') ? 'image' : 'resource',
 				resourceId: element.getAttribute('data-resource-id'),
 			});
@@ -236,17 +275,21 @@
 			const selectedText = window.getSelection().toString();
 
 			if (selectedText) {
-				ipcRenderer.sendToHost('contextMenu', {
+				ipcProxySendToHost('contextMenu', {
 					type: 'text',
 					textToCopy: selectedText,
 				});
 			} else if (event.target.getAttribute('href')) {
-				ipcRenderer.sendToHost('contextMenu', {
+				ipcProxySendToHost('contextMenu', {
 					type: 'link',
 					textToCopy: event.target.getAttribute('href'),
 				});
 			}
 		}
+	});
+
+	webviewLib.initialize({
+		postMessage: ipcProxySendToHost,
 	});
 
 	// Disable drag and drop otherwise it's possible to drop a URL

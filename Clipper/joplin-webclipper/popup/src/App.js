@@ -14,10 +14,14 @@ class AppComponent extends Component {
 
 		this.state = ({
 			contentScriptLoaded: false,
+			selectedTags: [],
 		});
 
 		this.confirm_click = () => {
-			bridge().sendContentToJoplin(this.props.clippedContent);
+			const content = Object.assign({}, this.props.clippedContent);
+			content.tags = this.state.selectedTags.join(',');
+			content.parent_id = this.props.selectedFolderId;
+			bridge().sendContentToJoplin(content);
 		}
 
 		this.contentTitle_change = (event) => {
@@ -30,21 +34,24 @@ class AppComponent extends Component {
 		this.clipSimplified_click = () => {
 			bridge().sendCommandToActiveTab({
 				name: 'simplifiedPageHtml',
-				parent_id: this.props.selectedFolderId,
 			});
 		}
 
 		this.clipComplete_click = () => {
 			bridge().sendCommandToActiveTab({
 				name: 'completePageHtml',
-				parent_id: this.props.selectedFolderId,
 			});
 		}
 
 		this.clipSelection_click = () => {
 			bridge().sendCommandToActiveTab({
 				name: 'selectedHtml',
-				parent_id: this.props.selectedFolderId,
+			});
+		}
+
+		this.clipUrl_click = () => {
+			bridge().sendCommandToActiveTab({
+				name: 'pageUrl',
 			});
 		}
 
@@ -56,6 +63,7 @@ class AppComponent extends Component {
 					name: 'screenshot',
 					api_base_url: baseUrl,
 					parent_id: this.props.selectedFolderId,
+					tags: this.state.selectedTags.join(','),
 				});
 
 				window.close();
@@ -74,6 +82,41 @@ class AppComponent extends Component {
 				id: event.target.value,
 			});
 		}
+
+		this.tagCompChanged = this.tagCompChanged.bind(this);
+		this.onAddTagClick = this.onAddTagClick.bind(this);
+		this.onClearTagButtonClick = this.onClearTagButtonClick.bind(this);
+	}
+
+	onAddTagClick(event) {
+		const newTags = this.state.selectedTags.slice();
+		newTags.push('');
+		this.setState({ selectedTags: newTags });
+		this.focusNewTagInput_ = true;
+	}
+
+	onClearTagButtonClick(event) {
+		const index = event.target.getAttribute('data-index');
+		const newTags = this.state.selectedTags.slice();
+		newTags.splice(index, 1);
+		this.setState({ selectedTags: newTags });
+	}
+
+	tagCompChanged(event) {
+		const index = Number(event.target.getAttribute('data-index'));
+		const value = event.target.value;
+
+		if (this.state.selectedTags.length <= index) {
+			const newTags = this.state.selectedTags.slice();
+			newTags.push(value);
+			this.setState({ selectedTags: newTags });
+		} else {
+			if (this.state.selectedTags[index] !== value) {
+				const newTags = this.state.selectedTags.slice();
+				newTags[index] = value;
+				this.setState({ selectedTags: newTags });				
+			}
+		}
 	}
 
 	async loadContentScripts() {
@@ -87,6 +130,39 @@ class AppComponent extends Component {
 		this.setState({
 			contentScriptLoaded: true,
 		});
+
+		let foundSelectedFolderId = false;
+
+		const searchSelectedFolder = (folders) => {
+			for (let i = 0; i < folders.length; i++) {
+				const folder = folders[i];
+				if (folder.id === this.props.selectedFolderId) foundSelectedFolderId = true;
+				if (folder.children) searchSelectedFolder(folder.children);
+			}
+		}
+
+		searchSelectedFolder(this.props.folders);
+
+		if (!foundSelectedFolderId) {
+			const newFolderId = this.props.folders.length ? this.props.folders[0].id : null;
+			this.props.dispatch({
+				type: 'SELECTED_FOLDER_SET',
+				id: newFolderId,
+			});
+		}
+	}
+
+	componentDidUpdate() {
+		if (this.focusNewTagInput_) {
+			this.focusNewTagInput_ = false;
+			let lastRef = null;
+			for (let i = 0; i < 100; i++) {
+				const ref = this.refs['tagSelector' + i];
+				if (!ref) break;
+				lastRef = ref;
+			}
+			if (lastRef) lastRef.focus();
+		}
 	}
 
 	render() {
@@ -119,24 +195,17 @@ class AppComponent extends Component {
 					<p className="Info">{ msg }</p>
 				</div>
 			);
-		} else {
-			if (hasContent) {
-				previewComponent = (
-					<div className="Preview">
-						<input className={"Title"} value={content.title} onChange={this.contentTitle_change}/>
-						<div className={"BodyWrapper"}>
-							<div className={"Body"} dangerouslySetInnerHTML={{__html: content.body_html}}></div>
-						</div>
-						<a className={"Confirm Button"} onClick={this.confirm_click}>Confirm</a>
+		} else if (hasContent) {
+			previewComponent = (
+				<div className="Preview">
+					<h2>Preview:</h2>
+					<input className={"Title"} value={content.title} onChange={this.contentTitle_change}/>
+					<div className={"BodyWrapper"}>
+						<div className={"Body"} dangerouslySetInnerHTML={{__html: content.body_html}}></div>
 					</div>
-				);
-			} else {
-				previewComponent = (
-					<div className="Preview">
-						<p className="Info">(No preview yet)</p>
-					</div>
-				);
-			}
+					<a className={"Confirm Button"} onClick={this.confirm_click}>Confirm</a>
+				</div>
+			);
 		}
 
 		const clipperStatusComp = () => {
@@ -166,8 +235,6 @@ class AppComponent extends Component {
 			return <div className="StatusBar"><img alt={foundState} className="Led" src={led}/><span className="ServerStatus">{ msg }{ helpLink }</span></div>
 		}
 
-		console.info(this.props.selectedFolderId);
-
 		const foldersComp = () => {
 			const optionComps = [];
 
@@ -196,6 +263,37 @@ class AppComponent extends Component {
 			);
 		}
 
+		const tagsComp = () => {
+			const comps = [];
+			for (let i = 0; i < this.state.selectedTags.length; i++) {
+				comps.push(<div>
+					<input
+						ref={'tagSelector' + i}
+						data-index={i}
+						key={i}
+						type="text"
+						list="tags"
+						value={this.state.selectedTags[i]}
+						onChange={this.tagCompChanged}
+						onInput={this.tagCompChanged}
+					/>
+					<a data-index={i} href="#" className="ClearTagButton" onClick={this.onClearTagButtonClick}>[x]</a>
+				</div>);
+			}
+			return (
+				<div>
+					{comps}
+					<a className="AddTagButton" href="#" onClick={this.onAddTagClick}>Add tag</a>
+				</div>
+			);
+		}
+
+		const tagDataListOptions = [];
+		for (let i = 0; i < this.props.tags.length; i++) {
+			const tag = this.props.tags[i];
+			tagDataListOptions.push(<option key={tag.id}>{tag.title}</option>);
+		}
+
 		return (
 			<div className="App">
 				<div className="Controls">			
@@ -204,11 +302,18 @@ class AppComponent extends Component {
 						<li><a className="Button" onClick={this.clipComplete_click}>Clip complete page</a></li>
 						<li><a className="Button" onClick={this.clipSelection_click}>Clip selection</a></li>
 						<li><a className="Button" onClick={this.clipScreenshot_click}>Clip screenshot</a></li>
+						<li><a className="Button" onClick={this.clipUrl_click}>Clip URL</a></li>
 					</ul>
 				</div>
 				{ foldersComp() }
+				<div className="Tags">
+					<label>Tags:</label>
+					{tagsComp()}
+					<datalist id="tags">
+						{tagDataListOptions}
+					</datalist>
+				</div>
 				{ warningComponent }
-				<h2>Preview:</h2>
 				{ previewComponent }
 				{ clipperStatusComp() }
 			</div>
@@ -224,6 +329,7 @@ const mapStateToProps = (state) => {
 		contentUploadOperation: state.contentUploadOperation,
 		clipperServer: state.clipperServer,
 		folders: state.folders,
+		tags: state.tags,
 		selectedFolderId: state.selectedFolderId,
 	};
 };

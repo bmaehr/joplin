@@ -33,8 +33,11 @@ const SyncTargetNextcloud = require('lib/SyncTargetNextcloud.js');
 const SyncTargetWebDAV = require('lib/SyncTargetWebDAV.js');
 const SyncTargetDropbox = require('lib/SyncTargetDropbox.js');
 const EncryptionService = require('lib/services/EncryptionService');
+const ResourceFetcher = require('lib/services/ResourceFetcher');
+const SearchEngineUtils = require('lib/services/SearchEngineUtils');
 const DecryptionWorker = require('lib/services/DecryptionWorker');
 const BaseService = require('lib/services/BaseService');
+const SearchEngine = require('lib/services/SearchEngine');
 
 SyncTargetRegistry.addClass(SyncTargetFilesystem);
 SyncTargetRegistry.addClass(SyncTargetOneDrive);
@@ -153,6 +156,12 @@ class BaseApplication {
 				continue;
 			}
 
+			if (arg === '--enable-logging') {
+				// Electron-specific flag used for debugging - ignore it
+				argv.splice(0, 1);
+				continue;
+			}
+
 			if (arg.length && arg[0] == '-') {
 				throw new JoplinError(_('Unknown flag: %s', arg), 'flagError');
 			} else {
@@ -180,7 +189,7 @@ class BaseApplication {
 		process.exit(code);
 	}
 
-	async refreshNotes(state) {
+	async refreshNotes(state, useSelectedNoteId = false) {
 		let parentType = state.notesParentType;
 		let parentId = null;
 
@@ -215,14 +224,10 @@ class BaseApplication {
 			if (parentType === Folder.modelType()) {
 				notes = await Note.previews(parentId, options);
 			} else if (parentType === Tag.modelType()) {
-				notes = await Tag.notes(parentId);
+				notes = await Tag.notes(parentId, options);
 			} else if (parentType === BaseModel.TYPE_SEARCH) {
-				let fields = Note.previewFields();
-				let search = BaseModel.byId(state.searches, parentId);
-				notes = await Note.previews(null, {
-					fields: fields,
-					anywherePattern: '*' + search.query_pattern + '*',
-				});
+				const search = BaseModel.byId(state.searches, parentId);
+				notes = await SearchEngineUtils.notesForQuery(search.query_pattern);
 			}
 		}
 
@@ -232,10 +237,38 @@ class BaseApplication {
 			notesSource: source,
 		});
 
-		this.store().dispatch({
-			type: 'NOTE_SELECT',
-			id: notes.length ? notes[0].id : null,
-		});
+		if (useSelectedNoteId) {
+			this.store().dispatch({
+				type: 'NOTE_SELECT',
+				id: state.selectedNoteIds && state.selectedNoteIds.length ? state.selectedNoteIds[0] : null,
+			});
+		} else {
+			const lastSelectedNoteIds = stateUtils.lastSelectedNoteIds(state);
+			const foundIds = [];
+			for (let i = 0; i < lastSelectedNoteIds.length; i++) {
+				const noteId = lastSelectedNoteIds[i];
+				let found = false;
+				for (let j = 0; j < notes.length; j++) {
+					if (notes[j].id === noteId) {
+						found = true;
+						break;
+					}
+				}
+				if (found) foundIds.push(noteId);
+			}
+
+			let selectedNoteId = null;
+			if (foundIds.length) {
+				selectedNoteId = foundIds[0];
+			} else {
+				selectedNoteId = notes.length ? notes[0].id : null;
+			}
+
+			this.store().dispatch({
+				type: 'NOTE_SELECT',
+				id: selectedNoteId,
+			});
+		}
 	}
 
 	reducerActionToString(action) {
@@ -272,13 +305,29 @@ class BaseApplication {
 		const result = next(action);
 		const newState = store.getState();
 		let refreshNotes = false;
+		let refreshFolders = false;
+		// let refreshTags = false;
+		let refreshNotesUseSelectedNoteId = false;
 
-		reduxSharedMiddleware(store, next, action);
+		await reduxSharedMiddleware(store, next, action);
 
-		if (action.type == 'FOLDER_SELECT' || action.type === 'FOLDER_DELETE' || (action.type === 'SEARCH_UPDATE' && newState.notesParentType === 'Folder')) {
+		if (this.hasGui()  && ["NOTE_UPDATE_ONE", "NOTE_DELETE", "FOLDER_UPDATE_ONE", "FOLDER_DELETE"].indexOf(action.type) >= 0) {
+			if (!await reg.syncTarget().syncStarted()) reg.scheduleSync(30 * 1000, { syncSteps: ["update_remote", "delete_remote"] });
+			SearchEngine.instance().scheduleSyncTables();
+		}
+
+		// Don't add FOLDER_UPDATE_ALL as refreshFolders() is calling it too, which
+		// would cause the sidebar to refresh all the time.
+		if (this.hasGui() && ["FOLDER_UPDATE_ONE"].indexOf(action.type) >= 0) {
+			refreshFolders = true;
+		}
+
+		if (action.type == 'FOLDER_SELECT' || action.type === 'FOLDER_DELETE' || action.type === 'FOLDER_AND_NOTE_SELECT' || (action.type === 'SEARCH_UPDATE' && newState.notesParentType === 'Folder')) {
 			Setting.setValue('activeFolderId', newState.selectedFolderId);
 			this.currentFolder_ = newState.selectedFolderId ? await Folder.load(newState.selectedFolderId) : null;
 			refreshNotes = true;
+
+			if (action.type === 'FOLDER_AND_NOTE_SELECT') refreshNotesUseSelectedNoteId = true;
 		}
 
 		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key == 'uncompletedTodosOnTop') || action.type == 'SETTING_UPDATE_ALL')) {
@@ -301,9 +350,20 @@ class BaseApplication {
 			refreshNotes = true;
 		}
 
+		// if (action.type == 'NOTE_DELETE') {
+		// 	refreshTags = true;
+		// }
+
 		if (refreshNotes) {
-			await this.refreshNotes(newState);
+			await this.refreshNotes(newState, refreshNotesUseSelectedNoteId);
 		}
+
+		// if (refreshTags) {
+		// 	this.dispatch({
+		// 		type: 'TAG_UPDATE_ALL',
+		// 		items: await Tag.allWithNotes(),
+		// 	});
+		// }
 
 		if ((action.type == 'SETTING_UPDATE_ONE' && (action.key == 'dateFormat' || action.key == 'timeFormat')) || (action.type == 'SETTING_UPDATE_ALL')) {
 			time.setDateFormat(Setting.value('dateFormat'));
@@ -342,10 +402,11 @@ class BaseApplication {
 		}
 
 		if (action.type === 'NOTE_UPDATE_ONE') {
-			// If there is a conflict, we refresh the folders so as to display "Conflicts" folder
-			if (action.note && action.note.is_conflict) {
-				await FoldersScreenUtils.refreshFolders();
-			}
+			refreshFolders = true;
+		}
+
+		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key.indexOf('folders.sortOrder') === 0) || action.type == 'SETTING_UPDATE_ALL')) {
+			refreshFolders = 'now';
 		}
 
 		if (this.hasGui() && action.type == 'SETTING_UPDATE_ONE' && action.key == 'sync.interval' || action.type == 'SETTING_UPDATE_ALL') {
@@ -354,6 +415,18 @@ class BaseApplication {
 
 		if (this.hasGui() && action.type === 'SYNC_GOT_ENCRYPTED_ITEM') {
 			DecryptionWorker.instance().scheduleStart();
+		}
+
+		if (this.hasGui() && action.type === 'SYNC_CREATED_RESOURCE') {
+			ResourceFetcher.instance().queueDownload(action.id);
+		}
+
+		if (refreshFolders) {
+			if (refreshFolders === 'now') {
+				await FoldersScreenUtils.refreshFolders();
+			} else {
+				await FoldersScreenUtils.scheduleRefreshFolders();
+			}
 		}
 
 	  	return result;
@@ -374,6 +447,7 @@ class BaseApplication {
 		reg.dispatch = this.store().dispatch;
 		BaseSyncTarget.dispatch = this.store().dispatch;
 		DecryptionWorker.instance().dispatch = this.store().dispatch;
+		ResourceFetcher.instance().dispatch = this.store().dispatch;
 	}
 
 	async readFlagsFromFile(flagPath) {
@@ -454,7 +528,7 @@ class BaseApplication {
 		initArgs = Object.assign(initArgs, extraFlags);
 
 		this.logger_.addTarget('file', { path: profileDir + '/log.txt' });
-		//this.logger_.addTarget('console');
+		// if (Setting.value('env') === 'dev') this.logger_.addTarget('console');
 		this.logger_.setLevel(initArgs.logLevel);
 
 		reg.setLogger(this.logger_);
@@ -464,7 +538,7 @@ class BaseApplication {
 		this.dbLogger_.setLevel(initArgs.logLevel);
 
 		if (Setting.value('env') === 'dev') {
-			this.dbLogger_.setLevel(Logger.LEVEL_WARN);
+			this.dbLogger_.setLevel(Logger.LEVEL_INFO);
 		}
 
 		this.logger_.info('Profile directory: ' + profileDir);
@@ -494,6 +568,12 @@ class BaseApplication {
 			setLocale(Setting.value('locale'));
 		}
 
+		if (!Setting.value('api.token')) {
+			EncryptionService.instance().randomHexString(64).then((token) => {
+				Setting.setValue('api.token', token);
+			});
+		}
+
 		time.setDateFormat(Setting.value('dateFormat'));
 		time.setTimeFormat(Setting.value('timeFormat'));
 
@@ -504,13 +584,19 @@ class BaseApplication {
 		DecryptionWorker.instance().setEncryptionService(EncryptionService.instance());
 		await EncryptionService.instance().loadMasterKeysFromSettings();
 
+		ResourceFetcher.instance().setFileApi(() => { return reg.syncTarget().fileApi() });
+		ResourceFetcher.instance().setLogger(this.logger_);
+		ResourceFetcher.instance().start();
+
+		SearchEngine.instance().setDb(reg.db());
+		SearchEngine.instance().setLogger(reg.logger());
+		SearchEngine.instance().scheduleSyncTables();
+
 		let currentFolderId = Setting.value('activeFolderId');
 		let currentFolder = null;
 		if (currentFolderId) currentFolder = await Folder.load(currentFolderId);
 		if (!currentFolder) currentFolder = await Folder.defaultFolder();
 		Setting.setValue('activeFolderId', currentFolder ? currentFolder.id : '');
-
-		// await this.testing();process.exit();
 
 		return argv;
 	}
