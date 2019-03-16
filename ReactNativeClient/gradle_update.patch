@@ -34,7 +34,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
    }
 
    flavorDimensions "react-native-camera"
-@@ -66,16 +66,15 @@
+@@ -70,16 +66,15 @@
  }
 
  dependencies {
@@ -93,7 +93,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
      }
 
      buildTypes {
-@@ -32,5 +28,5 @@
+@@ -42,5 +38,5 @@
  }
 
  dependencies {
