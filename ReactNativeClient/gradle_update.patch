@@ -24,7 +24,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -  compileSdkVersion safeExtGet('compileSdkVersion', 26)
 -  buildToolsVersion safeExtGet('buildToolsVersion', '26.0.2')
 +  compileSdkVersion 28
-+  buildToolsVersion '28.0.2'
++  buildToolsVersion '28.0.3'
 
    defaultConfig {
 -    minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -83,7 +83,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion safeExtGet("compileSdkVersion", 27)
 -    buildToolsVersion safeExtGet("buildToolsVersion", '27.0.3')
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -125,7 +125,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion 23
 -    buildToolsVersion "23.0.1"
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
      defaultConfig {
          minSdkVersion 16
 -        targetSdkVersion 23
@@ -163,7 +163,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion safeExtGet('compileSdkVersion', 23)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '25.0.0')
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -214,7 +214,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion safeExtGet('compileSdkVersion', 26)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '26.0.3')
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -269,7 +269,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion rootProject.hasProperty('compileSdkVersion') ? rootProject.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
 -    buildToolsVersion rootProject.hasProperty('buildToolsVersion') ? rootProject.buildToolsVersion : DEFAULT_BUILD_TOOLS_VERSION
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
          minSdkVersion 16
@@ -304,7 +304,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion safeExtGet('compileSdkVersion', 26)
 -    buildToolsVersion safeExtGet('buildToolsVersion', "26.0.3")
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -355,7 +355,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
 -    buildToolsVersion project.hasProperty('buildToolsVersion') ? project.buildToolsVersion : DEFAULT_BUILD_TOOLS_VERSION
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
          minSdkVersion 16
@@ -411,7 +411,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion 23
 -    buildToolsVersion "25.0.0"
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
          minSdkVersion 16
@@ -456,7 +456,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -  compileSdkVersion 23
 -  buildToolsVersion "23.0.1"
 +  compileSdkVersion 28
-+  buildToolsVersion '28.0.2'
++  buildToolsVersion '28.0.3'
 
    defaultConfig {
      minSdkVersion 16
@@ -501,7 +501,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion safeExtGet('compileSdkVersion', 23)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '27.0.3')
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -544,7 +544,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -  compileSdkVersion safeExtGet('compileSdkVersion', 26)
 -  buildToolsVersion safeExtGet('buildToolsVersion', '26.0.3')
 +  compileSdkVersion 28
-+  buildToolsVersion '28.0.2'
++  buildToolsVersion '28.0.3'
 
    defaultConfig {
 -    minSdkVersion safeExtGet('minSdkVersion', 16)
@@ -578,7 +578,7 @@ diff -ruN -x '*.json' -x '*.xml' -x '*.java' -x '*.properties' -x '*.txt' -x '*.
 -    compileSdkVersion safeExtGet('compileSdkVersion', 27)
 -    buildToolsVersion safeExtGet('buildToolsVersion', '27.0.3')
 +    compileSdkVersion 28
-+    buildToolsVersion '28.0.2'
++    buildToolsVersion '28.0.3'
 
      defaultConfig {
 -        minSdkVersion safeExtGet('minSdkVersion', 16)
