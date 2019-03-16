@@ -127,7 +127,7 @@ android {
 
 dependencies {
     implementation project(':react-native-push-notification')
-    implementation (project(':react-native-camera')) {
+    implementation (project(path: ':react-native-camera', configuration: 'default')) {
     	// This is required because com.google.firebase requires v16.0.x of com.google.android.gms
     	// while react-native-camera requires v15.x, which results in broken dependencies with
     	// this error message:
