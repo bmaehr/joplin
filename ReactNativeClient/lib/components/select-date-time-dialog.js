@@ -27,7 +27,7 @@ class SelectDateTimeDialog extends Component {
 	show(doShow = true) {
 		if (doShow) {
 			this.dialog_.show();
-		} else {
+		} else if (this.dialog_.dismiss) {
 			this.dialog_.dismiss();
 		}
 
